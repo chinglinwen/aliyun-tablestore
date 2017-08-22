@@ -14,6 +14,9 @@ func init() {
 	SetKey(endpoint, instance, accessKeyId, accessKeySecret)
 }
 
+// For create table only
+// it can use zero value, and only one row.
+
 var tb = &Table{
 	Name: "test",
 	Rows: []Row{
@@ -75,10 +78,17 @@ var tbgetrow = &Table{
 	},
 }
 
+var tbempty = &Table{
+	Name: "test",
+}
+
 func TestCreate(t *testing.T) {
-	if err := tb.Create(); err != nil {
-		t.Errorf("err: %v", err)
-	}
+	_ = tb.Create()
+	/*
+		if _ := tb.Create(); err != nil {
+			t.Errorf("err: %v", err)
+		}
+	*/
 }
 
 func TestPutARow(t *testing.T) {
@@ -107,17 +117,16 @@ func TestGetARow(t *testing.T) {
 			fmt.Printf("%v,%#v\n", v.Name, string(v.Bytes()))
 			continue
 		}
-		fmt.Printf("%v,%#v,%t\n", v.Name, v.Value, v.Value)
+		fmt.Printf("%v,%#v,type: %t\n", v.Name, v.Value, v.Value)
 	}
 }
 
 func TestPutRows(t *testing.T) {
-	resp, err := tb.PutRows()
+	err := tb.PutRows()
 	if err != nil {
 		t.Errorf("err: %v", err)
 		return
 	}
-	t.Logf("%#v\n", resp)
 }
 
 func TestGetRows(t *testing.T) {
@@ -131,14 +140,6 @@ func TestGetRows(t *testing.T) {
 			fmt.Printf("%v:%v key:%v, ", v.Name, v.Value, v.Pkey)
 		}
 		fmt.Println()
-	}
-}
-
-func TestDelARow(t *testing.T) {
-	err := tbputrow.DelRow()
-	//err := tbputrow.DelRow(SetColCondition("age", 10)) //with extra condition
-	if err != nil {
-		t.Errorf("err: %v", err)
 	}
 }
 
@@ -161,5 +162,18 @@ func TestDelCol(t *testing.T) {
 	err = tbputrow.DelColumn("col2")
 	if err != nil {
 		t.Errorf("err: %v", err)
+	}
+}
+
+func TestDelRows(t *testing.T) {
+	cond := SetColCondition([]Cond{Cond{0, "age", 10}})
+	//err := tbputrow.DelRows()
+	err := tbputrow.DelRows(cond) //with extra condition for first row
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+	err = tbempty.DelRows()
+	if err != ErrNoAnyRow {
+		t.Errorf("empty del err: %v", err)
 	}
 }

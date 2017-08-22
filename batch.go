@@ -6,7 +6,7 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 )
 
-func (t *Table) PutRows() ([]tablestore.RowResult, error) {
+func (t *Table) PutRowsRaw() ([]tablestore.RowResult, error) {
 	req := &tablestore.BatchWriteRowRequest{}
 	for _, row := range t.Rows {
 		req.AddRowChange(row.setputchange(t.Name))
@@ -16,6 +16,11 @@ func (t *Table) PutRows() ([]tablestore.RowResult, error) {
 		return nil, err
 	}
 	return resp.TableToRowsResult[t.Name], nil
+}
+
+func (t *Table) PutRows() (err error) {
+	_, err = t.PutRowsRaw()
+	return
 }
 
 // we must know primary key before query
@@ -52,6 +57,10 @@ func (t *Table) GetRows() (rows []Row, err error) {
 	if err != nil {
 		return
 	}
+	return rowResultParse(resp)
+}
+
+func rowResultParse(resp []tablestore.RowResult) (rows []Row, err error) {
 	for _, rowresult := range resp {
 		columns := []Column{}
 		for _, pkeyresult := range rowresult.PrimaryKey.PrimaryKeys {

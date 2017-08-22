@@ -6,37 +6,53 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 )
 
-func (t *Table) DelRow(options ...delOption) (err error) {
-	req := new(tablestore.DeleteRowRequest)
-	req.DeleteRowChange, err = t.setdelchange(options...)
-	if err != nil {
-		return
+var ErrNoAnyRow = errors.New("no any row")
+
+// DelRows delete provided rows ( one or many ).
+func (t *Table) DelRows(options ...delOption) (err error) {
+	if len(t.Rows) == 0 {
+		return ErrNoAnyRow
 	}
-	_, err = t.GetClient().DeleteRow(req)
+	for i, v := range t.Rows {
+		req := new(tablestore.DeleteRowRequest)
+		req.DeleteRowChange = v.setdelchange(t.Name, i, options...)
+		_, err = t.GetClient().DeleteRow(req)
+	}
 	return
 }
 
-func (t *Table) setdelchange(options ...delOption) (*tablestore.DeleteRowChange, error) {
-	if len(t.Rows) == 0 {
-		return nil, errors.New("no any row")
-	}
+func (r Row) setdelchange(tableName string, i int, options ...delOption) *tablestore.DeleteRowChange {
 	chg := new(tablestore.DeleteRowChange)
-	chg.TableName = t.Name
-	chg.PrimaryKey = t.Rows[0].setpk()
+	chg.TableName = tableName
+	chg.PrimaryKey = r.setpk()
 	chg.SetCondition(tablestore.RowExistenceExpectation_EXPECT_EXIST)
 
 	for _, op := range options {
-		op(chg)
+		op(i, chg)
 	}
-	return chg, nil
+	return chg
 }
 
-type delOption func(*tablestore.DeleteRowChange)
+type delOption func(int, *tablestore.DeleteRowChange)
 
-// Extra condition for del row
-// default to based on primary key, here can specify other normal columns
-func SetColCondition(key string, value interface{}) delOption {
-	return func(chg *tablestore.DeleteRowChange) {
+// Condition for deleteing.
+type Cond struct {
+	Index int // start from zero.
+	Key   string
+	Value interface{}
+}
+
+// Extra condition for del rows,
+// default is based on primary key, here can specify other normal columns.
+func SetColCondition(conds []Cond) delOption {
+	return func(i int, chg *tablestore.DeleteRowChange) {
+		var key string
+		var value interface{}
+		for _, v := range conds {
+			if i == v.Index {
+				key, value = v.Key, v.Value
+			}
+		}
 		if key == "" || value == nil {
 			return
 		}
