@@ -14,7 +14,11 @@ type Table struct {
 	Name string
 	Rows []Row
 
-	client *tablestore.TableStoreClient
+	client     *tablestore.TableStoreClient
+	maxVersion int
+	//timeToAlive int  // not implement as option yet
+	//readcap int  // not implement as option yet
+	//writeCap int // not implement as option yet
 }
 
 // Value: Primary key:   int,int64,string,[]byte.
@@ -40,9 +44,10 @@ func NewWithClient(name string, rows []Row, client *tablestore.TableStoreClient)
 		client = defaultClient
 	}
 	return &Table{
-		Name:   name,
-		Rows:   rows,
-		client: client,
+		Name:       name,
+		Rows:       rows,
+		client:     client,
+		maxVersion: 3,
 	}
 }
 
@@ -63,16 +68,20 @@ func SetKey(endPoint, instanceName, accessKeyId, accessKeySecret string, options
 }
 
 // Create create table one row with zero value is enough.
-func (t *Table) Create() (err error) {
+func (t *Table) Create(options ...tableOption) (err error) {
 	req := new(tablestore.CreateTableRequest)
 	meta, err := t.setmeta()
 	if err != nil {
 		return
 	}
 
+	for _, op := range options {
+		op(t)
+	}
+
 	option := new(tablestore.TableOption)
 	option.TimeToAlive = -1
-	option.MaxVersion = 3
+	option.MaxVersion = t.maxVersion // default 3
 
 	res := new(tablestore.ReservedThroughput)
 	res.Readcap = 0
@@ -84,6 +93,14 @@ func (t *Table) Create() (err error) {
 
 	_, err = t.GetClient().CreateTable(req)
 	return
+}
+
+type tableOption func(*Table)
+
+func MaxVersion(i int) tableOption {
+	return func(t *Table) {
+		t.maxVersion = i
+	}
 }
 
 func (t *Table) setmeta() (*tablestore.TableMeta, error) {

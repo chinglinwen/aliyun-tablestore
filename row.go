@@ -5,7 +5,10 @@ import (
 	"reflect"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/davecgh/go-spew/spew"
 )
+
+var ErrNoAnyHistory = errors.New("no any history")
 
 // PutRow put only one row.
 func (t *Table) PutRow() (err error) {
@@ -38,6 +41,45 @@ func (t *Table) GetRowRaw() (colmap *tablestore.ColumnMap, err error) {
 	}
 	colmap = resp.GetColumnMap()
 	return
+}
+
+type RowHistory []Row
+
+// i provided ,use i
+// not provided means all (0)
+func (t *Table) GetRowHistory(max int) (RowHistory, error) {
+	colmap, err := t.GetRowRaw()
+	if err != nil {
+		return nil, err
+	}
+	spew.Dump(colmap)
+	// zero will take all history (based on first column)
+	if max == 0 {
+		for _, col := range colmap.Columns {
+			max = len(col)
+			break
+		}
+	}
+	if max == 0 {
+		return nil, ErrNoAnyHistory
+	}
+	rh := RowHistory{}
+	i := 1
+	for ; i <= max; i++ {
+		columns := []Column{}
+		for name, col := range colmap.Columns {
+			if len(col) < i {
+				return nil, errors.New("not enough version")
+			}
+			v := col[i-1]
+			columns = append(columns, Column{Name: name, Value: v.Value})
+		}
+		rh = append(rh, Row(columns))
+	}
+	if i == 1 {
+		return nil, ErrNoAnyHistory
+	}
+	return rh, nil
 }
 
 // GetRow get only one row, and it is the newest row(latest changed).

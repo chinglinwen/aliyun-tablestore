@@ -1,5 +1,12 @@
 package tablestore
 
+import (
+	"fmt"
+	"testing"
+
+	"github.com/davecgh/go-spew/spew"
+)
+
 func init() {
 	// dev setting
 	endpoint := "http://weisudai-dev.cn-beijing.ots.aliyuncs.com"
@@ -77,4 +84,111 @@ var tbempty = &Table{
 	Name: "test",
 }
 
-// See example as go test.
+func TestCreate(t *testing.T) {
+	_ = tb.Create()
+	//if _ := tb.Create(); err != nil {
+	//	t.Errorf("err: %v", err)
+	//}
+}
+
+func TestPutRow(t *testing.T) {
+	err := tbputrow.PutRow()
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+}
+
+func TestGetRow(t *testing.T) {
+	row, err := tbgetrow.GetRow()
+	if err != nil {
+		t.Errorf("err: %v", err)
+		return
+	}
+	printRow(row)
+}
+
+func printRow(row Row) {
+	for _, v := range row {
+		if v.Name == "id" {
+			fmt.Printf("%v,%#v\n", v.Name, v.Int())
+			continue
+		}
+		if v.Name == "name" {
+			fmt.Printf("%v,%#v\n", v.Name, v.String())
+			continue
+		}
+		if v.Name == "phone" {
+			fmt.Printf("%v,%#v\n", v.Name, string(v.Bytes()))
+			continue
+		}
+		fmt.Printf("%v,%#v,type: %t\n", v.Name, v.Value, v.Value)
+	}
+}
+
+func TestGetRowHistory(t *testing.T) {
+	rh, err := tbgetrow.GetRowHistory(0)
+	if err != nil {
+		t.Errorf("err: %v", err)
+		return
+	}
+	spew.Dump(rh)
+}
+
+func TestPutRows(t *testing.T) {
+	err := tb.PutRows()
+	if err != nil {
+		t.Errorf("err: %v", err)
+		return
+	}
+}
+
+func TestGetRows(t *testing.T) {
+	rows, err := tbget.GetRows()
+	if err != nil {
+		t.Errorf("err: %v", err)
+		return
+	}
+	printRows(rows)
+}
+
+func printRows(rows []Row) {
+	for _, row := range rows {
+		printRow(row)
+		fmt.Println()
+	}
+}
+
+func TestPutColumn(t *testing.T) {
+	m := map[string]interface{}{
+		"col1": "val1",
+		"col2": 11,
+	}
+	err := tbputrow.PutColumn(m)
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+}
+
+func TestDelColumn(t *testing.T) {
+	err := tbputrow.DelColumn("col1")
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+	err = tbputrow.DelColumn("col2")
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+}
+
+func TestDelRows(t *testing.T) {
+	cond := SetColCondition([]Cond{Cond{0, "age", 10}})
+	//err := tbputrow.DelRows()
+	err := tbputrow.DelRows(cond) //with extra condition for first row
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+	err = tbempty.DelRows()
+	if err != ErrNoAnyRow {
+		t.Errorf("empty del err: %v", err)
+	}
+}
