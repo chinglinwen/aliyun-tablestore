@@ -5,15 +5,18 @@ import (
 	"reflect"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
-	"github.com/davecgh/go-spew/spew"
 )
 
-var ErrNoAnyHistory = errors.New("no any history")
+var (
+	ErrNoRowOrTooMany  = errors.New("no any row or too many rows for table")
+	ErrNoAnyHistory    = errors.New("no any history")
+	ErrHistoryNotFound = errors.New("history not found")
+)
 
-// PutRow put only one row.
+// PutRow put only one row, no history will be kept.
 func (t *Table) PutRow() (err error) {
 	if len(t.Rows) != 1 {
-		return errors.New("no any row or two many rows")
+		return ErrNoRowOrTooMany
 	}
 	req := new(tablestore.PutRowRequest)
 	req.PutRowChange = t.Rows[0].setputchange(t.Name)
@@ -21,19 +24,35 @@ func (t *Table) PutRow() (err error) {
 	return
 }
 
+// UpdateRow will keep the histories
+func (t *Table) UpdateRow() (err error) {
+	if len(t.Rows) != 1 {
+		return ErrNoRowOrTooMany
+	}
+	req := new(tablestore.UpdateRowRequest)
+	req.UpdateRowChange = t.Rows[0].setupdatechange(t.Name)
+	_, err = t.GetClient().UpdateRow(req)
+	return
+}
+
 // Default to first row as condition.
 // Primary key length must be matched.
-func (t *Table) GetRowRaw() (colmap *tablestore.ColumnMap, err error) {
+func (t *Table) GetRowRaw(options ...rowOption) (colmap *tablestore.ColumnMap, err error) {
 	if len(t.Rows) == 0 {
-		return nil, errors.New("no any row")
+		return nil, ErrNoAnyRow
 	}
-	req := new(tablestore.GetRowRequest)
-	criteria := new(tablestore.SingleRowQueryCriteria)
 
+	criteria := new(tablestore.SingleRowQueryCriteria)
 	criteria.PrimaryKey = t.Rows[0].setpk()
+	criteria.TableName = t.Name
+	criteria.MaxVersion = 1 // default value
+
+	for _, op := range options {
+		op(criteria)
+	}
+
+	req := new(tablestore.GetRowRequest)
 	req.SingleRowQueryCriteria = criteria
-	req.SingleRowQueryCriteria.TableName = t.Name
-	req.SingleRowQueryCriteria.MaxVersion = 1
 
 	resp, err := t.GetClient().GetRow(req)
 	if err != nil {
@@ -43,25 +62,38 @@ func (t *Table) GetRowRaw() (colmap *tablestore.ColumnMap, err error) {
 	return
 }
 
+type rowOption func(*tablestore.SingleRowQueryCriteria)
+
+func SetRowMaxVersion(max int) rowOption {
+	if max == 0 {
+		max = 10000 // big enough for all version.
+	}
+	return func(c *tablestore.SingleRowQueryCriteria) {
+		c.MaxVersion = int32(max)
+	}
+}
+
 type RowHistory []Row
 
-// i provided ,use i
-// not provided means all (0)
+// max big than real, will use real length,
+// zero means means all.
 func (t *Table) GetRowHistory(max int) (RowHistory, error) {
-	colmap, err := t.GetRowRaw()
+	colmap, err := t.GetRowRaw(SetRowMaxVersion(max))
 	if err != nil {
 		return nil, err
 	}
-	spew.Dump(colmap)
+	var n int
 	// zero will take all history (based on first column)
-	if max == 0 {
-		for _, col := range colmap.Columns {
-			max = len(col)
-			break
-		}
+	for _, col := range colmap.Columns {
+		n = len(col)
+		break
 	}
-	if max == 0 {
+	if n == 0 {
 		return nil, ErrNoAnyHistory
+	}
+	if max == 0 || max > n {
+		max = n
+
 	}
 	rh := RowHistory{}
 	i := 1
@@ -69,7 +101,8 @@ func (t *Table) GetRowHistory(max int) (RowHistory, error) {
 		columns := []Column{}
 		for name, col := range colmap.Columns {
 			if len(col) < i {
-				return nil, errors.New("not enough version")
+				continue
+				//return nil, errors.New("not enough version")
 			}
 			v := col[i-1]
 			columns = append(columns, Column{Name: name, Value: v.Value})
@@ -77,7 +110,7 @@ func (t *Table) GetRowHistory(max int) (RowHistory, error) {
 		rh = append(rh, Row(columns))
 	}
 	if i == 1 {
-		return nil, ErrNoAnyHistory
+		return nil, ErrHistoryNotFound
 	}
 	return rh, nil
 }
@@ -129,6 +162,20 @@ func (r Row) setputchange(tableName string) *tablestore.PutRowChange {
 			continue
 		}
 		chg.AddColumn(v.Name, wraptype(v.Value))
+	}
+	chg.SetCondition(tablestore.RowExistenceExpectation_IGNORE)
+	return chg
+}
+
+func (r Row) setupdatechange(tableName string) *tablestore.UpdateRowChange {
+	chg := new(tablestore.UpdateRowChange)
+	chg.TableName = tableName
+	chg.PrimaryKey = r.setpk()
+	for _, v := range r {
+		if v.Pkey {
+			continue
+		}
+		chg.PutColumn(v.Name, wraptype(v.Value))
 	}
 	chg.SetCondition(tablestore.RowExistenceExpectation_IGNORE)
 	return chg

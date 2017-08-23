@@ -12,7 +12,7 @@ func (t *Table) DelColumn(name string) (err error) {
 		return errors.New("no any row")
 	}
 	req := new(tablestore.UpdateRowRequest)
-	chg := t.Rows[0].setupdatechange(t.Name)
+	chg := t.Rows[0].setudelchange(t.Name)
 	chg.DeleteColumn(name)
 	req.UpdateRowChange = chg
 	_, err = t.GetClient().UpdateRow(req)
@@ -26,7 +26,7 @@ func (t *Table) PutColumn(m map[string]interface{}) (err error) {
 		return errors.New("no any row")
 	}
 	req := new(tablestore.UpdateRowRequest)
-	chg := t.Rows[0].setupdatechange(t.Name)
+	chg := t.Rows[0].setudelchange(t.Name)
 	for name, v := range m {
 		chg.PutColumn(name, wraptype(v))
 	}
@@ -35,7 +35,7 @@ func (t *Table) PutColumn(m map[string]interface{}) (err error) {
 	return
 }
 
-func (r Row) setupdatechange(tableName string) *tablestore.UpdateRowChange {
+func (r Row) setudelchange(tableName string) *tablestore.UpdateRowChange {
 	chg := new(tablestore.UpdateRowChange)
 	chg.TableName = tableName
 	chg.PrimaryKey = r.setpk()

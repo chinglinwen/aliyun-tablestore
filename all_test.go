@@ -3,8 +3,6 @@ package tablestore
 import (
 	"fmt"
 	"testing"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 func init() {
@@ -59,10 +57,22 @@ var tbputrow = &Table{
 	Name: "test",
 	Rows: []Row{
 		[]Column{
-			Column{Name: "id", Value: 3, Pkey: true},
-			Column{Name: "name", Value: "nameC", Pkey: true},
+			Column{Name: "id", Value: 2, Pkey: true},
+			Column{Name: "name", Value: "nameB", Pkey: true},
 			Column{Name: "age", Value: 10},
 			Column{Name: "phone", Value: []byte("1113")},
+		},
+	},
+}
+
+var tbupdaterow = &Table{
+	Name: "test",
+	Rows: []Row{
+		[]Column{
+			Column{Name: "id", Value: 2, Pkey: true},
+			Column{Name: "name", Value: "nameB", Pkey: true},
+			Column{Name: "age", Value: 10},
+			Column{Name: "phone", Value: []byte("1113-update")},
 		},
 	},
 }
@@ -72,8 +82,8 @@ var tbgetrow = &Table{
 	Name: "test",
 	Rows: []Row{
 		[]Column{
-			Column{Name: "id", Value: 3, Pkey: true},
-			Column{Name: "name", Value: "nameC", Pkey: true},
+			Column{Name: "id", Value: 2, Pkey: true},
+			Column{Name: "name", Value: "nameB", Pkey: true},
 			//Column{Name: "age", Value: 10},
 			//Column{Name: "phone", Value: []byte("1113")},
 		},
@@ -93,6 +103,13 @@ func TestCreate(t *testing.T) {
 
 func TestPutRow(t *testing.T) {
 	err := tbputrow.PutRow()
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+}
+
+func TestUpdateRow(t *testing.T) {
+	err := tbupdaterow.UpdateRow()
 	if err != nil {
 		t.Errorf("err: %v", err)
 	}
@@ -131,7 +148,7 @@ func TestGetRowHistory(t *testing.T) {
 		t.Errorf("err: %v", err)
 		return
 	}
-	spew.Dump(rh)
+	printRows(rh)
 }
 
 func TestPutRows(t *testing.T) {
@@ -181,9 +198,9 @@ func TestDelColumn(t *testing.T) {
 }
 
 func TestDelRows(t *testing.T) {
-	cond := SetColCondition([]Cond{Cond{0, "age", 10}})
-	//err := tbputrow.DelRows()
-	err := tbputrow.DelRows(cond) //with extra condition for first row
+	err := tbputrow.DelRows()
+	//cond := SetColCondition([]Cond{Cond{0, "age", 10}})
+	//err := tbputrow.DelRows(cond) //with extra condition for first row
 	if err != nil {
 		t.Errorf("err: %v", err)
 	}
