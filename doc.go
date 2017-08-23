@@ -118,5 +118,33 @@ DelRows:
 	if err != nil {
 		t.Errorf("err: %v", err)
 	}
+
+Key/Value:
+
+Use update to keep the history, Put will delete history.
+
+Update:
+
+	err := Update("kv", "hello", "there1")
+	err = Update("kv", "hello", "there2")
+
+Get:
+
+	v, err := Get("kv", "hello")
+
+KVHistory:
+
+	vs, err := KVHistory("kv", "hello", 4)
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+	for _, v := range vs {
+		fmt.Println("vs:", v.String())
+	}
+
+Del:
+
+	err := Del("kv", "hello", "there2")
+
 */
 package tablestore

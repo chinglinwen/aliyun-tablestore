@@ -140,7 +140,7 @@ func (r Row) setpk() *tablestore.PrimaryKey {
 	return pk
 }
 
-// in case int tyep not suppported
+// in case int type not suppported
 func wraptype(v interface{}) interface{} {
 	if v == nil {
 		return v
