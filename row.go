@@ -18,8 +18,8 @@ func (t *Table) PutRow() (err error) {
 	return
 }
 
-// default to first row as condition.
-// primary key length must be matched.
+// Default to first row as condition.
+// Primary key length must be matched.
 func (t *Table) GetRowRaw() (colmap *tablestore.ColumnMap, err error) {
 	if len(t.Rows) == 0 {
 		return nil, errors.New("no any row")
@@ -94,9 +94,9 @@ func (r Row) setputchange(tableName string) *tablestore.PutRowChange {
 
 // We don't introduce extra type for value,
 // Because it make create table type more complex.
-
 // So we use column as base type to convert.
 
+// Convert column's value to int.
 func (c *Column) Int() (v int) {
 	if c.Value == nil {
 		return
@@ -105,6 +105,7 @@ func (c *Column) Int() (v int) {
 	return
 }
 
+// Convert column's value to int64.
 func (c *Column) Int64() (v int64) {
 	if c.Value == nil {
 		return
@@ -113,6 +114,7 @@ func (c *Column) Int64() (v int64) {
 	return
 }
 
+// Convert column's value to string.
 func (c *Column) String() (v string) {
 	if c.Value == nil {
 		return
@@ -121,6 +123,7 @@ func (c *Column) String() (v string) {
 	return
 }
 
+// Convert column's value to []byte.
 func (c *Column) Bytes() (v []byte) {
 	if c.Value == nil {
 		return

@@ -17,8 +17,8 @@ type Table struct {
 	client *tablestore.TableStoreClient
 }
 
-// Value: Primary key:   int,int64,string,[]byte
-// Value: Normal column: int,int64,string,[]byte,bool,float64
+// Value: Primary key:   int,int64,string,[]byte.
+// Value: Normal column: int,int64,string,[]byte,bool,float64.
 type Column struct {
 	Name     string
 	Pkey     bool // Primary key or not
@@ -28,8 +28,14 @@ type Column struct {
 
 type Row []Column
 
-// use new to create a default.GetClient().()
-func New(name string, rows []Row, client *tablestore.TableStoreClient) *Table {
+// New Create a table. ( with default client),
+// It can be create by literal construction too.
+func New(name string, rows []Row) *Table {
+	return NewWithClient(name, rows, nil)
+}
+
+// NewWithClient create a table, with specified client.
+func NewWithClient(name string, rows []Row, client *tablestore.TableStoreClient) *Table {
 	if client == nil {
 		client = defaultClient
 	}
@@ -40,7 +46,7 @@ func New(name string, rows []Row, client *tablestore.TableStoreClient) *Table {
 	}
 }
 
-// used to set different.GetClient().()
+// SetClient set different client.
 func (t *Table) SetClient(c *tablestore.TableStoreClient) {
 	t.client = c
 }
@@ -56,7 +62,7 @@ func SetKey(endPoint, instanceName, accessKeyId, accessKeySecret string, options
 	defaultClient = tablestore.NewClient(endPoint, instanceName, accessKeyId, accessKeySecret, options...)
 }
 
-// create table one row is enough
+// Create create table one row with zero value is enough.
 func (t *Table) Create() (err error) {
 	req := new(tablestore.CreateTableRequest)
 	meta, err := t.setmeta()
