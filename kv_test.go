@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	err := NewKV("kv", "hello", "").Create()
+	err := NewKV("kv", "hello", "", SetMaxVersion(10)).Create()
 	if err != nil {
 		fmt.Println("create kv err ", err)
 	}
@@ -65,3 +65,10 @@ func TestDel(t *testing.T) {
 		t.Errorf("err: %v", err)
 	}
 }
+
+//func TestDelTable(t *testing.T) {
+//	err := DelTable("kv")
+//	if err != nil {
+//		t.Errorf("err: %v", err)
+//	}
+//}

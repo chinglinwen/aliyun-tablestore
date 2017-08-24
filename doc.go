@@ -6,79 +6,60 @@ it can use zero value, and only one row.
 
 Create:
 
-	var tb = &Table{
-		Name: "test",
-		Rows: []Row{
-			[]Column{
-				Column{Name: "id", Value: 1, Pkey: true},
-				Column{Name: "name", Value: "nameA", Pkey: true},
-				Column{Name: "age", Value: 1},
-				Column{Name: "phone", Value: []byte("1111")},
-			},
-			[]Column{
-				Column{Name: "id", Value: 2, Pkey: true},
-				Column{Name: "name", Value: "nameB", Pkey: true},
-				Column{Name: "age", Value: 2},
-				Column{Name: "phone", Value: []byte("1112")},
-			},
+	rows := []Row{
+		[]Column{
+			Column{Name: "id", Value: 1, Pkey: true},
+			Column{Name: "name", Value: "nameA", Pkey: true},
+			Column{Name: "age", Value: 1},
+			Column{Name: "phone", Value: []byte("1111")},
+		},
+		[]Column{
+			Column{Name: "id", Value: 2, Pkey: true},
+			Column{Name: "name", Value: "nameB", Pkey: true},
+			Column{Name: "age", Value: 2},
+			Column{Name: "phone", Value: []byte("1112")},
 		},
 	}
+	tb := New("test", rows)
 
 	err := tb.Create()
 	err := tb.PutRows()
 
 GetRow:
 
-	var tbget = &Table{
-		Name: "test",
-		Rows: []Row{
-			[]Column{
-				Column{Name: "id", Value: 1, Pkey: true},
-				Column{Name: "name", Value: "nameA", Pkey: true},
-				//Column{Name: "age", Value: 1},
-				//Column{Name: "phone", Value: 1111},
-			},
-			[]Column{
-				Column{Name: "id", Value: 2, Pkey: true},
-				Column{Name: "name", Value: "nameB", Pkey: true},
-				//Column{Name: "age", Value: 2},
-				//Column{Name: "phone", Value: 1112},
-			},
+	// Omit primary key will cause error.
+	rows = []Row{
+		[]Column{
+			Column{Name: "id", Value: 1, Pkey: true},
+			Column{Name: "name", Value: "nameA", Pkey: true},
+			//Column{Name: "age", Value: 1},
+			//Column{Name: "phone", Value: 1111},
+		},
+		[]Column{
+			Column{Name: "id", Value: 2, Pkey: true},
+			Column{Name: "name", Value: "nameB", Pkey: true},
+			//Column{Name: "age", Value: 2},
+			//Column{Name: "phone", Value: 1112},
 		},
 	}
+	tbget := New("test", rows)
 
 	row, err := tbgetrow.GetRow()
 
 PutRow:
 
-	var tbputrow = &Table{
-		Name: "test",
-		Rows: []Row{
-			[]Column{
-				Column{Name: "id", Value: 3, Pkey: true},
-				Column{Name: "name", Value: "nameC", Pkey: true},
-				Column{Name: "age", Value: 10},
-				Column{Name: "phone", Value: []byte("1113")},
-			},
+	rows = []Row{
+		[]Column{
+			Column{Name: "id", Value: 2, Pkey: true},
+			Column{Name: "name", Value: "nameB", Pkey: true},
+			Column{Name: "age", Value: 10},
+			Column{Name: "phone", Value: []byte("1113")},
 		},
 	}
-
+	tbputrow := New("test", rows)
 	err := tbputrow.PutRow()
 
 GetRows:
-
-	// omit a key will be error for getrow
-	var tbgetrow = &Table{
-		Name: "test",
-		Rows: []Row{
-			[]Column{
-				Column{Name: "id", Value: 3, Pkey: true},
-				Column{Name: "name", Value: "nameC", Pkey: true},
-				//Column{Name: "age", Value: 10},
-				//Column{Name: "phone", Value: []byte("1113")},
-			},
-		},
-	}
 
 	rows, err := tbget.GetRows()
 	if err != nil {
@@ -122,6 +103,16 @@ DelRows:
 Key/Value:
 
 Use update to keep the history, Put will delete history.
+
+First time need to create kv (table first), in case table not exist yet.
+Often at init from during the process
+
+Create:
+
+	err := NewKV("kv", "hello", "", SetMaxVersion(10)).Create()
+	if err != nil {
+		fmt.Println("create kv err ", err)
+	}
 
 Update:
 

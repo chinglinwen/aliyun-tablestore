@@ -34,21 +34,17 @@ type Row []Column
 
 // New Create a table. ( with default client),
 // It can be create by literal construction too.
-func New(name string, rows []Row) *Table {
-	return NewWithClient(name, rows, nil)
-}
-
-// NewWithClient create a table, with specified client.
-func NewWithClient(name string, rows []Row, client *tablestore.TableStoreClient) *Table {
-	if client == nil {
-		client = defaultClient
-	}
-	return &Table{
+func New(name string, rows []Row, options ...tableOption) (t *Table) {
+	t = &Table{
 		Name:       name,
 		Rows:       rows,
-		client:     client,
-		maxVersion: 3,
+		client:     defaultClient, // default
+		maxVersion: 3,             // default
 	}
+	for _, op := range options {
+		op(t)
+	}
+	return
 }
 
 // SetClient set different client.
@@ -63,20 +59,20 @@ func (t *Table) GetClient() *tablestore.TableStoreClient {
 	return t.client
 }
 
+func (t *Table) MaxVersion(max int) {
+	t.maxVersion = max
+}
+
 func SetKey(endPoint, instanceName, accessKeyId, accessKeySecret string, options ...tablestore.ClientOption) {
 	defaultClient = tablestore.NewClient(endPoint, instanceName, accessKeyId, accessKeySecret, options...)
 }
 
 // Create create table one row with zero value is enough.
-func (t *Table) Create(options ...tableOption) (err error) {
+func (t *Table) Create() (err error) {
 	req := new(tablestore.CreateTableRequest)
 	meta, err := t.setmeta()
 	if err != nil {
 		return
-	}
-
-	for _, op := range options {
-		op(t)
 	}
 
 	option := new(tablestore.TableOption)
@@ -97,9 +93,15 @@ func (t *Table) Create(options ...tableOption) (err error) {
 
 type tableOption func(*Table)
 
-func MaxVersion(i int) tableOption {
+func MaxVersion(max int) tableOption {
 	return func(t *Table) {
-		t.maxVersion = i
+		t.maxVersion = max
+	}
+}
+
+func SetClient(client *tablestore.TableStoreClient) tableOption {
+	return func(t *Table) {
+		t.client = client
 	}
 }
 
@@ -128,4 +130,16 @@ func (t *Table) setmeta() (*tablestore.TableMeta, error) {
 		}
 	}
 	return meta, nil
+}
+
+func (t *Table) Del() (err error) {
+	req := new(tablestore.DeleteTableRequest)
+	req.TableName = t.Name
+	_, err = t.GetClient().DeleteTable(req)
+	return
+}
+
+func DelTable(name string) error {
+	t := &Table{Name: name}
+	return t.Del()
 }

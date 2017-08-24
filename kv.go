@@ -8,13 +8,14 @@ type KV struct {
 	Name string
 	K, V interface{}
 
-	table *Table
-	kname string
-	vname string
+	table      *Table
+	kname      string
+	vname      string
+	maxVersion int
 }
 
-func NewKV(tableName string, key, value interface{}, options ...kvOption) *KV {
-	k := &KV{
+func NewKV(tableName string, key, value interface{}, options ...kvOption) (k *KV) {
+	k = &KV{
 		Name:  tableName,
 		K:     key,
 		V:     value,
@@ -30,8 +31,12 @@ func NewKV(tableName string, key, value interface{}, options ...kvOption) *KV {
 			Column{Name: k.vname, Value: k.V},
 		},
 	}
+	if k.maxVersion != 0 {
+		k.table = New(k.Name, row, MaxVersion(k.maxVersion))
+		return
+	}
 	k.table = New(k.Name, row)
-	return k
+	return
 }
 
 type kvOption func(*KV)
@@ -43,14 +48,13 @@ func SetKVName(kname, vname string) kvOption {
 	}
 }
 
-func (k *KV) Create() error {
-	row := []Row{
-		[]Column{
-			Column{Name: k.kname, Value: k.K, Pkey: true},
-			Column{Name: k.vname, Value: k.V},
-		},
+func SetMaxVersion(max int) kvOption {
+	return func(k *KV) {
+		k.maxVersion = max
 	}
-	k.table = New(k.Name, row)
+}
+
+func (k *KV) Create() error {
 	return k.table.Create()
 }
 

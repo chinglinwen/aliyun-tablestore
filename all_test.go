@@ -17,9 +17,8 @@ func init() {
 // For create table only
 // it can use zero value, and only one row.
 
-var tb = &Table{
-	Name: "test",
-	Rows: []Row{
+func init() {
+	rows := []Row{
 		[]Column{
 			Column{Name: "id", Value: 1, Pkey: true},
 			Column{Name: "name", Value: "nameA", Pkey: true},
@@ -32,12 +31,10 @@ var tb = &Table{
 			Column{Name: "age", Value: 2},
 			Column{Name: "phone", Value: []byte("1112")},
 		},
-	},
-}
+	}
+	tb = New("test", rows)
 
-var tbget = &Table{
-	Name: "test",
-	Rows: []Row{
+	rows = []Row{
 		[]Column{
 			Column{Name: "id", Value: 1, Pkey: true},
 			Column{Name: "name", Value: "nameA", Pkey: true},
@@ -50,49 +47,50 @@ var tbget = &Table{
 			//Column{Name: "age", Value: 2},
 			//Column{Name: "phone", Value: 1112},
 		},
-	},
-}
+	}
+	tbget = New("test", rows)
 
-var tbputrow = &Table{
-	Name: "test",
-	Rows: []Row{
+	rows = []Row{
 		[]Column{
 			Column{Name: "id", Value: 2, Pkey: true},
 			Column{Name: "name", Value: "nameB", Pkey: true},
 			Column{Name: "age", Value: 10},
 			Column{Name: "phone", Value: []byte("1113")},
 		},
-	},
-}
+	}
+	tbputrow = New("test", rows)
 
-var tbupdaterow = &Table{
-	Name: "test",
-	Rows: []Row{
+	rows = []Row{
 		[]Column{
 			Column{Name: "id", Value: 2, Pkey: true},
 			Column{Name: "name", Value: "nameB", Pkey: true},
 			Column{Name: "age", Value: 10},
 			Column{Name: "phone", Value: []byte("1113-update")},
 		},
-	},
-}
+	}
+	tbupdaterow = New("test", rows)
 
-// omit a key will be error for getrow
-var tbgetrow = &Table{
-	Name: "test",
-	Rows: []Row{
+	rows = []Row{
 		[]Column{
 			Column{Name: "id", Value: 2, Pkey: true},
 			Column{Name: "name", Value: "nameB", Pkey: true},
 			//Column{Name: "age", Value: 10},
 			//Column{Name: "phone", Value: []byte("1113")},
 		},
-	},
+	}
+	tbgetrow = New("test", rows)
+
+	tbempty = New("test", nil)
 }
 
-var tbempty = &Table{
-	Name: "test",
-}
+var (
+	tb          *Table
+	tbget       *Table
+	tbputrow    *Table
+	tbupdaterow *Table
+	tbgetrow    *Table
+	tbempty     *Table
+)
 
 func TestCreate(t *testing.T) {
 	_ = tb.Create()
