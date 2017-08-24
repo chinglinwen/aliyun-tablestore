@@ -2,6 +2,7 @@ package tablestore
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 )
@@ -88,6 +89,9 @@ func (t *Table) Create() (err error) {
 	req.ReservedThroughput = res
 
 	_, err = t.GetClient().CreateTable(req)
+	if strings.Contains(err.Error(), "exist") {
+		err = nil
+	}
 	return
 }
 

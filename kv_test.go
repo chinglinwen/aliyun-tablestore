@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	err := NewKV("kv", "hello", "", SetMaxVersion(10)).Create()
+	err := NewKV("kv", "", "", SetMaxVersion(10)).Create()
 	if err != nil {
 		fmt.Println("create kv err ", err)
 	}

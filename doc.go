@@ -107,11 +107,13 @@ Use update to keep the history, Put will delete history.
 First time need to create kv (table first), in case table not exist yet.
 Often at init from during the process
 
+for KV init(create), zero value is enough.
+
 Create:
 
-	err := NewKV("kv", "hello", "", SetMaxVersion(10)).Create()
+	err := NewKV("kv", "", "", SetMaxVersion(10)).Create()
 	if err != nil {
-		fmt.Println("create kv err ", err)
+		log.Fatal("kv init err: ", err)
 	}
 
 Update:
