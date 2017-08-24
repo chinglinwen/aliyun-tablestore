@@ -74,25 +74,25 @@ func Update(name string, k, v interface{}) error {
 	return NewKV(name, k, v).Update()
 }
 
-func (k *KV) Get() (interface{}, error) {
+func (k *KV) Get() (t T, err error) {
 	row, err := k.table.GetRow()
 	if err != nil {
-		return nil, err
+		return
 	}
 	for _, v := range row {
-		return v.Value, nil
+		t.value = v.Value
+		return
 	}
-	return nil, errors.New("no any value")
+	err = errors.New("no any value")
+	return
 }
 
-func Get(name string, k interface{}) (interface{}, error) {
+func Get(name string, k interface{}) (T, error) {
 	return NewKV(name, k, nil).Get()
 }
 
-type kvhistory []t
-
 // Newest at lower index, zero index is the newest.
-func (k *KV) KVHistory(max int) (vs kvhistory, err error) {
+func (k *KV) KVHistory(max int) (vs []T, err error) {
 	rows, err := k.table.GetRowHistory(max)
 	if err != nil {
 		return
@@ -102,13 +102,13 @@ func (k *KV) KVHistory(max int) (vs kvhistory, err error) {
 			err = errors.New("no history or too many columns")
 			return
 		}
-		vs = append(vs, t{value: v[0].Value})
+		vs = append(vs, T{value: v[0].Value})
 	}
 	return
 }
 
 // A helper function for kv's KVHistory.
-func KVHistory(name string, k interface{}, max int) (kvhistory, error) {
+func KVHistory(name string, k interface{}, max int) ([]T, error) {
 	return NewKV(name, k, nil).KVHistory(max)
 }
 
@@ -120,34 +120,34 @@ func Del(name string, k, v interface{}) error {
 	return NewKV(name, k, v).Del()
 }
 
-type t struct {
+type T struct {
 	value interface{}
 }
 
 // Convert value to int.
-func (t *t) Int() (v int) {
+func (t *T) Int() (v int) {
 	v, _ = t.value.(int)
 	return
 }
 
 // Convert value to int64.
-func (t *t) Int64() (v int64) {
+func (t *T) Int64() (v int64) {
 	v, _ = t.value.(int64)
 	return
 }
 
 // Convert value to string.
-func (t *t) String() (v string) {
+func (t *T) String() (v string) {
 	v, _ = t.value.(string)
 	return
 }
 
 // Convert value to []byte.
-func (t *t) Bytes() (v []byte) {
+func (t *T) Bytes() (v []byte) {
 	v, _ = t.value.([]byte)
 	return
 }
 
-func (t *t) Any() interface{} {
+func (t *T) Any() interface{} {
 	return t.value
 }
