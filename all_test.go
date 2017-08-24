@@ -5,14 +5,13 @@ import (
 	"testing"
 )
 
-func init() {
-	// dev setting
-	endpoint := "http://weisudai-dev.cn-beijing.ots.aliyuncs.com"
-	instance := "weisudai-dev"
-	accessKeyId := "LTAIwrVogRswISb3"
-	accessKeySecret := "9rCJZ8XnGpcCewyRi3eOYKMewWIKte"
-	SetKey(endpoint, instance, accessKeyId, accessKeySecret)
-}
+//func init() {
+//	endpoint := "http://xxx.cn-beijing.ots.aliyuncs.com"
+//	instance := "xxx"
+//	accessKeyId := "xxx"
+//	accessKeySecret := "xxx"
+//	SetKey(endpoint, instance, accessKeyId, accessKeySecret)
+//}
 
 // For create table only
 // it can use zero value, and only one row.

@@ -139,5 +139,15 @@ Del:
 
 	err := Del("kv", "hello", "there2")
 
+Example setkey:
+
+	func init() {
+		endpoint := "http://xxx.cn-beijing.ots.aliyuncs.com"
+		instance := "xxx"
+		accessKeyId := "xxx"
+		accessKeySecret := "xxx"
+		SetKey(endpoint, instance, accessKeyId, accessKeySecret)
+	}
+
 */
 package tablestore
