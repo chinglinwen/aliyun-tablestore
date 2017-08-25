@@ -58,6 +58,12 @@ func (k *KV) Create() error {
 	return k.table.Create()
 }
 
+// Create kv table, zero value is enough.
+func CreateKV(name string, k, v interface{}, options ...kvOption) error {
+	kv := NewKV(name, k, v, options...)
+	return kv.Create()
+}
+
 func (k *KV) Put() error {
 	return k.table.PutRow()
 }

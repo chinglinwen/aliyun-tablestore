@@ -114,7 +114,7 @@ for KV init(create), zero value is enough.
 
 Create:
 
-	err := NewKV("kv", "", "", SetMaxVersion(10)).Create()
+	err := CreateKV("kv", "", "", SetMaxVersion(10))
 	if err != nil {
 		log.Fatal("kv init err: ", err)
 	}
