@@ -89,8 +89,10 @@ func (t *Table) Create() (err error) {
 	req.ReservedThroughput = res
 
 	_, err = t.GetClient().CreateTable(req)
-	if strings.Contains(err.Error(), "exist") {
-		err = nil
+	if err != nil {
+		if strings.Contains(err.Error(), "exist") {
+			err = nil
+		}
 	}
 	return
 }
