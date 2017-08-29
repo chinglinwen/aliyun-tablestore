@@ -12,9 +12,9 @@ Use struct as the model.
 	type User struct {
 		Id   int    `tablestore:",pkey"`
 		User string `tablestore:"usera"`
-		Pass string
+		Pass string `tablestore:"-"`
 
-		extra string // `tablestore:"-"`
+		extra string // unexported field is ignored
 	}
 
 	var (
