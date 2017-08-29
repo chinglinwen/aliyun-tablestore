@@ -24,8 +24,12 @@ func NewSimpleTable(s interface{}, options ...tableOption) (*Table, error) {
 	return New(name, []Row{row}, options...), nil
 }
 
-func NewSimpleTableBatch(ss []interface{}, options ...tableOption) (*Table, error) {
-	name, err := structName(ss)
+func NewSimpleTableBatch(slice interface{}, options ...tableOption) (*Table, error) {
+	ss, err := interfaceSlice(slice)
+	if err != nil {
+		return nil, err
+	}
+	name, err := structName(ss[0])
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +44,23 @@ func NewSimpleTableBatch(ss []interface{}, options ...tableOption) (*Table, erro
 	return New(name, rows, options...), nil
 }
 
+func interfaceSlice(slice interface{}) (ret []interface{}, err error) {
+	s := reflect.ValueOf(slice)
+	if s.Kind() != reflect.Slice {
+		err = errors.New("not a slice type")
+		return
+	}
+	ret = make([]interface{}, s.Len())
+	for i := 0; i < s.Len(); i++ {
+		ret[i] = s.Index(i).Interface()
+	}
+	if ret == nil || len(ret) == 0 {
+		err = errors.New("slice is nil, or zero length")
+		return
+	}
+	return
+}
+
 // CreateSimpleTable create the simple table directly.
 func CreateSimpleTable(s interface{}) error {
 	t, err := NewSimpleTable(s)
@@ -50,7 +71,7 @@ func CreateSimpleTable(s interface{}) error {
 }
 
 // For multiple rows as batch process.
-func CreateSimpleTableBatch(ss []interface{}) error {
+func CreateSimpleTableBatch(ss interface{}) error {
 	t, err := NewSimpleTableBatch(ss)
 	if err != nil {
 		return err
@@ -90,7 +111,7 @@ func UpdateRow(s interface{}) error {
 	return t.UpdateRow()
 }
 
-func GetRows(ss []interface{}) ([]Row, error) {
+func GetRows(ss interface{}) ([]Row, error) {
 	t, err := NewSimpleTableBatch(ss)
 	if err != nil {
 		return nil, err
@@ -98,7 +119,7 @@ func GetRows(ss []interface{}) ([]Row, error) {
 	return t.GetRows()
 }
 
-func PutRows(ss []interface{}) error {
+func PutRows(ss interface{}) error {
 	t, err := NewSimpleTableBatch(ss)
 	if err != nil {
 		return err
