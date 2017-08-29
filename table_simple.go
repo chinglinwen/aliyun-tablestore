@@ -11,27 +11,67 @@ import (
 // Default tag name.
 var TagName = "tablestore"
 
+// SimpleTable a simplify table concept based on struct.
+type SimpleTable struct {
+	model interface{}
+	table *Table
+}
+
+// Get the underlying table.
+func (s *SimpleTable) GetTable() *Table {
+	return s.table
+}
+
 // Simple table from struct model.
-func NewSimpleTable(s interface{}, options ...tableOption) (*Table, error) {
+//
+// example struct:
+//
+//		type User struct {
+//			Id   int    `tablestore:",pkey"`
+//			User string `tablestore:"usera"`
+//			Pass string
+//
+//			extra string // `tablestore:"-"`
+//		}
+//
+//		s  = User{Id: 1, User: "user1", Pass: "pass1"}
+//
+func NewSimpleTable(s interface{}, options ...tableOption) (t *SimpleTable, err error) {
 	name, err := structName(s)
 	if err != nil {
-		return nil, err
+		return
 	}
 	row, err := structToRow(s)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return New(name, []Row{row}, options...), nil
+	t = &SimpleTable{
+		model: s,
+		table: New(name, []Row{row}, options...),
+	}
+	return
 }
 
-func NewSimpleTableBatch(slice interface{}, options ...tableOption) (*Table, error) {
+// Create batch process for slice of struct.
+//
+//		 slice := []User{
+//				{Id: 2, User: "user2", Pass: "pass2"},
+//				{Id: 3, User: "user3", Pass: "pass3"},
+//		 }
+//
+func NewSimpleTableBatch(slice interface{}, options ...tableOption) (t *SimpleTable, err error) {
 	ss, err := interfaceSlice(slice)
 	if err != nil {
-		return nil, err
+		return
 	}
+	return NewSimpleTableBatchRaw(ss)
+}
+
+// Create batch process for slice of interface.
+func NewSimpleTableBatchRaw(ss []interface{}, options ...tableOption) (t *SimpleTable, err error) {
 	name, err := structName(ss[0])
 	if err != nil {
-		return nil, err
+		return
 	}
 	rows := []Row{}
 	for i, s := range ss {
@@ -41,9 +81,14 @@ func NewSimpleTableBatch(slice interface{}, options ...tableOption) (*Table, err
 		}
 		rows = append(rows, row)
 	}
-	return New(name, rows, options...), nil
+	t = &SimpleTable{
+		model: ss,
+		table: New(name, rows, options...),
+	}
+	return
 }
 
+// convert slice of struct to slice of interface.
 func interfaceSlice(slice interface{}) (ret []interface{}, err error) {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
@@ -61,6 +106,11 @@ func interfaceSlice(slice interface{}) (ret []interface{}, err error) {
 	return
 }
 
+// Create for both kind of table ( include batch ).
+func (s *SimpleTable) Create() error {
+	return s.table.Create()
+}
+
 // CreateSimpleTable create the simple table directly.
 func CreateSimpleTable(s interface{}) error {
 	t, err := NewSimpleTable(s)
@@ -70,7 +120,7 @@ func CreateSimpleTable(s interface{}) error {
 	return t.Create()
 }
 
-// For multiple rows as batch process.
+// For multiple rows as a batch process.
 func CreateSimpleTableBatch(ss interface{}) error {
 	t, err := NewSimpleTableBatch(ss)
 	if err != nil {
@@ -79,6 +129,12 @@ func CreateSimpleTableBatch(ss interface{}) error {
 	return t.Create()
 }
 
+// Get a single row.
+func (s *SimpleTable) GetRow() (Row, error) {
+	return s.table.GetRow()
+}
+
+// Get a single row. (table defined by struct s)
 func GetRow(s interface{}) (Row, error) {
 	t, err := NewSimpleTable(s)
 	if err != nil {
@@ -87,6 +143,12 @@ func GetRow(s interface{}) (Row, error) {
 	return t.GetRow()
 }
 
+// Get row history.
+func (s *SimpleTable) GetRowHistory(max int) (RowHistory, error) {
+	return s.table.GetRowHistory(max)
+}
+
+// Get row history. (table defined by struct s)
 func GetRowHistory(s interface{}, max int) (RowHistory, error) {
 	t, err := NewSimpleTable(s)
 	if err != nil {
@@ -95,6 +157,12 @@ func GetRowHistory(s interface{}, max int) (RowHistory, error) {
 	return t.GetRowHistory(max)
 }
 
+// Put a single row.
+func (s *SimpleTable) PutRow() error {
+	return s.table.PutRow()
+}
+
+// Put a single row. (table defined by struct s)
 func PutRow(s interface{}) error {
 	t, err := NewSimpleTable(s)
 	if err != nil {
@@ -103,6 +171,12 @@ func PutRow(s interface{}) error {
 	return t.PutRow()
 }
 
+// Update a single row.
+func (s *SimpleTable) UpdateRow() error {
+	return s.table.UpdateRow()
+}
+
+// Update a single row. (table defined by struct s)
 func UpdateRow(s interface{}) error {
 	t, err := NewSimpleTable(s)
 	if err != nil {
@@ -111,6 +185,13 @@ func UpdateRow(s interface{}) error {
 	return t.UpdateRow()
 }
 
+// Get multiple rows.
+func (s *SimpleTable) GetRows() ([]Row, error) {
+	return s.table.GetRows()
+}
+
+// Get multiple rows. (table defined by struct s)
+// Often provide primary key is enough.
 func GetRows(ss interface{}) ([]Row, error) {
 	t, err := NewSimpleTableBatch(ss)
 	if err != nil {
@@ -119,6 +200,12 @@ func GetRows(ss interface{}) ([]Row, error) {
 	return t.GetRows()
 }
 
+// Put multiple rows.
+func (s *SimpleTable) PutRows() error {
+	return s.table.PutRows()
+}
+
+// Put multiple rows. (table defined by struct s)
 func PutRows(ss interface{}) error {
 	t, err := NewSimpleTableBatch(ss)
 	if err != nil {
@@ -186,6 +273,12 @@ func strctVal(s interface{}) (v reflect.Value, err error) {
 	return
 }
 
+// convert name default rule.
+// default rule:
+//		User -> user
+//		userRule -> user_rule
+// split by uppercase, and insert an underscore.
+//
 func nameConvert(name string) string {
 	var words []string
 	l := 0
