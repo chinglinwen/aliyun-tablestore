@@ -251,6 +251,7 @@ func structToRow(s interface{}) (row Row, err error) {
 	if err != nil {
 		return nil, err
 	}
+	var pkeyexist bool
 	row = []Column{}
 	for i := 0; i < v.NumField(); i++ {
 		// skip unexported field
@@ -271,10 +272,21 @@ func structToRow(s interface{}) (row Row, err error) {
 			}
 		}
 		pkey := strings.Contains(tag, "pkey")
+		noauto := strings.Contains(tag, "noauto")
+		if !pkey && name == "id" && !noauto {
+			pkey = true // automatic primary key on id
+		}
+		if pkey {
+			pkeyexist = true
+		}
 		value := v.Field(i).Interface()
 		row = append(row, Column{Name: name, Value: value, Pkey: pkey})
 	}
-	return row, nil
+	if !pkeyexist {
+		err = errors.New("no primary key specified")
+		return
+	}
+	return
 }
 
 func strctVal(s interface{}) (v reflect.Value, err error) {

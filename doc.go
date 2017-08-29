@@ -7,8 +7,8 @@ We abstract a simple table concept based on struct.
 Use struct as the model.
 
 	type User struct {
-		Id   int    `tablestore:",pkey"`
-		User string `tablestore:"usera"`
+		Id   int   // automatic pkey for id field, set noauto tag to disable it
+		User string `tablestore:"usera,pkey"`  // optional pkey
 		Pass string `tablestore:"-"`
 
 		extra string // unexported field is ignored
