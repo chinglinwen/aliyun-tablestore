@@ -1,8 +1,63 @@
 /*
 Package tablestore implement a abstract table concept for aliyun tablestore.
 
-For create table only
-it can use zero value, and only one row.
+SimpleTable:
+
+We abstract a simple table concept based on struct.
+Use struct as the model.
+
+	type User struct {
+		Id   int    `tablestore:",pkey"`
+		User string `tablestore:"usera"`
+		Pass string `tablestore:"-"`
+
+		extra string // unexported field is ignored
+	}
+
+	var (
+		u  = User{Id: 1, User: "user1", Pass: "pass1"}
+		us = []User{
+			{Id: 2, User: "user2", Pass: "pass2"},
+			{Id: 3, User: "user3", Pass: "pass3"},
+		}
+	)
+
+Create:
+
+	// zero value is enough for create table only.
+	err := CreateSimpleTable(u)
+
+	// same behavior for create table. (use the first struct as model.)
+	err = CreateSimpleTableBatch(us)
+
+Put:
+
+	err := PutRow(u)  // put will overwrite the history.
+
+Update:
+
+	err := UpdateRow(u)
+
+GetRow:
+
+	row, err := GetRow(u)
+
+PutRows:
+
+	err := PutRows(us)
+
+GetRows:
+
+	rows, err := GetRows(us)
+
+DelTable:
+
+	err := DelTable("user")
+
+
+Origin table usage example:
+
+for create table it can use zero value, and only one row.
 
 Create:
 
