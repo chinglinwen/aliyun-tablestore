@@ -13,6 +13,10 @@ type User struct {
 	extra string // `tablestore:"-"`
 }
 
+func (u User) TableName() string {
+	return "userxx"
+}
+
 var (
 	u  = User{Id: 1, User: "user1", Pass: "pass1"}
 	us = []User{
@@ -33,11 +37,23 @@ func init() {
 }
 
 func TestSimpleTableName(t *testing.T) {
-	name, err := structName(u)
+	name, err := tablename(u)
 	if err != nil {
 		t.Errorf("err %v", err)
 	}
-	expect := "user"
+	expect := "userxx"
+	if name != expect {
+		t.Errorf("table name got %q, expect %q", name, expect)
+	}
+
+	type U1 struct {
+		a int
+	}
+	name, err = tablename(&U1{})
+	if err != nil {
+		t.Errorf("err %v", err)
+	}
+	expect = "u1"
 	if name != expect {
 		t.Errorf("table name got %q, expect %q", name, expect)
 	}

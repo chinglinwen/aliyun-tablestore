@@ -16,6 +16,10 @@ Use struct as the model.
 
 		extra string // unexported field is ignored
 	}
+	
+	func (u User) TableName() string {
+		return "userxx"
+	}
 
 	var (
 		u  = User{Id: 1, User: "user1", Pass: "pass1"}

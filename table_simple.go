@@ -17,6 +17,12 @@ type SimpleTable struct {
 	table *Table
 }
 
+// Customize table name rather than default name.
+// default: split by uppercase, and insert an underscore.
+type TableName interface {
+	TableName() string
+}
+
 // Get the underlying table.
 func (s *SimpleTable) GetTable() *Table {
 	return s.table
@@ -37,7 +43,7 @@ func (s *SimpleTable) GetTable() *Table {
 //		s  = User{Id: 1, User: "user1", Pass: "pass1"}
 //
 func NewSimpleTable(s interface{}, options ...tableOption) (t *SimpleTable, err error) {
-	name, err := structName(s)
+	name, err := tablename(s)
 	if err != nil {
 		return
 	}
@@ -48,6 +54,17 @@ func NewSimpleTable(s interface{}, options ...tableOption) (t *SimpleTable, err 
 	t = &SimpleTable{
 		model: s,
 		table: New(name, []Row{row}, options...),
+	}
+	return
+}
+
+func tablename(s interface{}) (name string, err error) {
+	name, err = structName(s)
+	if err != nil {
+		return
+	}
+	if sn, ok := s.(TableName); ok {
+		name = sn.TableName()
 	}
 	return
 }
@@ -69,7 +86,7 @@ func NewSimpleTableBatch(slice interface{}, options ...tableOption) (t *SimpleTa
 
 // Create batch process for slice of interface.
 func NewSimpleTableBatchRaw(ss []interface{}, options ...tableOption) (t *SimpleTable, err error) {
-	name, err := structName(ss[0])
+	name, err := tablename(ss[0])
 	if err != nil {
 		return
 	}
