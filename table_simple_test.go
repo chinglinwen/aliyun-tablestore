@@ -6,11 +6,13 @@ import (
 )
 
 type User struct {
-	Id   int    `tablestore:",pkey"`
-	User string `tablestore:"usera"`
-	Pass string
+	Id     int64  `tablestore:",pkey"`
+	User   string `tablestore:"usera"`
+	Pass   string
+	Ignore string `tablestore:"-"`
+	Age    int
 
-	extra string // `tablestore:"-"`
+	extra string // unexported field will be ignored
 }
 
 func (u User) TableName() string {
@@ -18,15 +20,15 @@ func (u User) TableName() string {
 }
 
 var (
-	u  = User{Id: 1, User: "user1", Pass: "pass1"}
+	u  = User{Id: 1, User: "user1", Pass: "pass1", Ignore: "ignore", Age: 1}
 	uq = &User{Id: 1}
 	us = []User{
-		{Id: 2, User: "user2", Pass: "pass2"},
-		{Id: 3, User: "user3", Pass: "pass3"},
+		{Id: 2, User: "user2", Pass: "pass2", Ignore: "ignore", Age: 2},
+		{Id: 3, User: "user3", Pass: "pass3", Ignore: "ignore", Age: 3},
 	}
-	usq = []User{
-		{Id: 2},
-		{Id: 3},
+	usq = []*User{
+		&User{Id: 2},
+		&User{Id: 3},
 	}
 )
 
@@ -79,23 +81,18 @@ func TestSimpleUpdateRow(t *testing.T) {
 }
 
 func TestSimpleGetRowByFunc(t *testing.T) {
-	uq, err := GetRow(uq)
+	err := GetRow(uq)
 	if err != nil {
 		t.Errorf("err: %v", err)
 		return
 	}
-	//if uq.User != "user1" {
-	//	t.Errorf("expect %v, got %v", "user1", uq.User)
-	//	return
-	//}
-	fmt.Println("uq", uq)
-	//spew.Dump("uq user", uq.(User))
+	if uq.User != "user1" {
+		t.Errorf("expect %v, got %v", "user1", uq.User)
+		return
+	}
 }
 
 func TestSimpleGetRow(t *testing.T) {
-	//spew.Dump("uq before", uq)
-	//uq, err := GetRow(uq)
-
 	s, err := NewSimpleTable(uq)
 	if err != nil {
 		return
@@ -105,9 +102,10 @@ func TestSimpleGetRow(t *testing.T) {
 		t.Errorf("err: %v", err)
 		return
 	}
-	uq := s.model.(User)
-	fmt.Println("s", s.model)
-	fmt.Println("uq", uq)
+	if uq.User != "user1" {
+		t.Errorf("expect %v, got %v", "user1", uq.User)
+		return
+	}
 }
 
 func TestSimplePutRows(t *testing.T) {
@@ -123,12 +121,19 @@ func TestSimpleGetRows(t *testing.T) {
 		t.Errorf("err: %v", err)
 		return
 	}
-	fmt.Println("usq", usq)
+	if usq[0].Ignore != "" {
+		t.Errorf("ignore is been stored")
+		return
+	}
+	if usq[0].Age != 2 && usq[1].Age != 3 {
+		t.Errorf("get rows failed")
+		return
+	}
 }
 
 func TestDelSimple(t *testing.T) {
-	err := DelTable("user")
+	err := DelTable("userxx")
 	if err != nil {
-		fmt.Println("err: %v", err)
+		fmt.Println("del table err: %v", err)
 	}
 }

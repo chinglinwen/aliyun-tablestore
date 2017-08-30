@@ -11,6 +11,11 @@ import (
 // Default tag name.
 var TagName = "tablestore"
 
+var (
+	ErrSliceCantSet   = errors.New("slice can't set, try use pointer for slice element")
+	ErrLengthNotMatch = errors.New("length does not match")
+)
+
 // SimpleTable a simplify table concept based on struct.
 type SimpleTable struct {
 	model    interface{}
@@ -173,31 +178,29 @@ func (s *SimpleTable) GetRow() (err error) {
 }
 
 func (s *SimpleTable) fillStruct(row Row) error {
-	t, err := strctVal(s.model)
-	if err != nil {
-		return err
+	t := reflect.ValueOf(s.model)
+	// if pointer get the underlying element
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
 	}
-	tt := reflect.New(t.Type()).Elem()
 	for _, v := range row {
-		val := tt.FieldByName(s.tagnames[v.Name])
-		val.Set(reflect.ValueOf(v.Value))
+		x := v.Value
+		if i, ok := x.(int64); ok {
+			x = int(i)
+		}
+		val := t.FieldByName(s.tagnames[v.Name])
+		val.Set(reflect.ValueOf(x))
 	}
-	s.model = tt.Interface()
 	return nil
 }
 
 // Get a single row. (table defined by struct s)
-func GetRow(s interface{}) (d interface{}, err error) {
+func GetRow(s interface{}) (err error) {
 	t, err := NewSimpleTable(s)
 	if err != nil {
 		return
 	}
-	err = t.GetRow()
-	if err != nil {
-		return
-	}
-	d = t.model
-	return
+	return t.GetRow()
 }
 
 // Get row history.
@@ -247,7 +250,7 @@ func (s *SimpleTable) GetRowsRaw() ([]Row, error) {
 	return s.table.GetRows()
 }
 
-// Get multiple rows.
+// Get multiple rows, result in slice of struct itself.
 func (s *SimpleTable) GetRows() error {
 	rows, err := s.table.GetRows()
 	if err != nil {
@@ -256,20 +259,39 @@ func (s *SimpleTable) GetRows() error {
 	return s.fillStructs(rows)
 }
 
-func (s *SimpleTable) fillStructs(rows []Row) error {
-	t, err := strctVal(s.model)
-	if err != nil {
-		return err
+func (s *SimpleTable) fillStructs(rows []Row) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v, try use pointer, eg: []*struct", r)
+			return
+		}
+	}()
+
+	t := reflect.ValueOf(s.model)
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
 	}
-	tt := reflect.New(t.Type()).Elem()
-	for _, row := range rows {
-		for _, v := range row {
+	if t.Len() != len(rows) {
+		return ErrLengthNotMatch
+	}
+	for i := 0; i < t.Len(); i++ {
+		tt := reflect.ValueOf(t.Index(i).Interface()).Elem()
+		if !tt.CanSet() {
+			return ErrSliceCantSet
+		}
+		for _, v := range rows[i] {
+			if v.Pkey {
+				continue
+			}
+			x := v.Value
+			if i, ok := x.(int64); ok {
+				x = int(i)
+			}
 			val := tt.FieldByName(s.tagnames[v.Name])
-			val.Set(reflect.ValueOf(v.Value))
+			val.Set(reflect.ValueOf(x))
 		}
 	}
-	s.model = tt.Interface()
-	return nil
+	return
 }
 
 // Get multiple rows. (table defined by struct s)
