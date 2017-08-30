@@ -125,7 +125,7 @@ func (t *Table) setmeta() (*tablestore.TableMeta, error) {
 			continue
 		}
 		switch v.Value.(type) {
-		case int:
+		case int, int64:
 			meta.AddPrimaryKeyColumn(v.Name, tablestore.PrimaryKeyType_INTEGER)
 		case string:
 			meta.AddPrimaryKeyColumn(v.Name, tablestore.PrimaryKeyType_STRING)

@@ -7,11 +7,13 @@ We abstract a simple table concept based on struct.
 Use struct as the model.
 
 	type User struct {
-		Id   int   // automatic pkey for id field, set noauto tag to disable it
-		User string `tablestore:"usera,pkey"`  // optional pkey
-		Pass string `tablestore:"-"`
+		Id     int    // automatic pkey for id field, add ,noauto tag to disable it
+		User   string `tablestore:"usera"` // optional pkey
+		Pass   string
+		Ignore string `tablestore:"-"`
+		Age    int
 
-		extra string // unexported field is ignored
+		extra string // unexported field will be ignored
 	}
 
 	func (u User) TableName() string {
@@ -19,10 +21,15 @@ Use struct as the model.
 	}
 
 	var (
-		u  = User{Id: 1, User: "user1", Pass: "pass1"}
+		u  = User{Id: 1, User: "user1", Pass: "pass1", Ignore: "ignore", Age: 1}
+		uq = &User{Id: 1}
 		us = []User{
-			{Id: 2, User: "user2", Pass: "pass2"},
-			{Id: 3, User: "user3", Pass: "pass3"},
+			{Id: 2, User: "user2", Pass: "pass2", Ignore: "ignore", Age: 2},
+			{Id: 3, User: "user3", Pass: "pass3", Ignore: "ignore", Age: 3},
+		}
+		usq = []*User{
+			&User{Id: 2},
+			&User{Id: 3},
 		}
 	)
 
@@ -44,7 +51,8 @@ Update:
 
 GetRow:
 
-	row, err := GetRow(u)
+	err := GetRow(uq)
+	// uq.User  // usage example
 
 PutRows:
 
@@ -52,7 +60,8 @@ PutRows:
 
 GetRows:
 
-	rows, err := GetRows(us)
+	err := GetRows(usq)
+	// usq[0].User  // usage example
 
 DelTable:
 
