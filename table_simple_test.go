@@ -19,9 +19,14 @@ func (u User) TableName() string {
 
 var (
 	u  = User{Id: 1, User: "user1", Pass: "pass1"}
+	uq = &User{Id: 1}
 	us = []User{
 		{Id: 2, User: "user2", Pass: "pass2"},
 		{Id: 3, User: "user3", Pass: "pass3"},
+	}
+	usq = []User{
+		{Id: 2},
+		{Id: 3},
 	}
 )
 
@@ -73,13 +78,36 @@ func TestSimpleUpdateRow(t *testing.T) {
 	}
 }
 
-func TestSimpleGetRow(t *testing.T) {
-	row, err := GetRow(u)
+func TestSimpleGetRowByFunc(t *testing.T) {
+	uq, err := GetRow(uq)
 	if err != nil {
 		t.Errorf("err: %v", err)
 		return
 	}
-	printRow(row)
+	//if uq.User != "user1" {
+	//	t.Errorf("expect %v, got %v", "user1", uq.User)
+	//	return
+	//}
+	fmt.Println("uq", uq)
+	//spew.Dump("uq user", uq.(User))
+}
+
+func TestSimpleGetRow(t *testing.T) {
+	//spew.Dump("uq before", uq)
+	//uq, err := GetRow(uq)
+
+	s, err := NewSimpleTable(uq)
+	if err != nil {
+		return
+	}
+	err = s.GetRow()
+	if err != nil {
+		t.Errorf("err: %v", err)
+		return
+	}
+	uq := s.model.(User)
+	fmt.Println("s", s.model)
+	fmt.Println("uq", uq)
 }
 
 func TestSimplePutRows(t *testing.T) {
@@ -90,12 +118,12 @@ func TestSimplePutRows(t *testing.T) {
 }
 
 func TestSimpleGetRows(t *testing.T) {
-	rows, err := GetRows(us)
+	err := GetRows(usq)
 	if err != nil {
 		t.Errorf("err: %v", err)
 		return
 	}
-	printRows(rows)
+	fmt.Println("usq", usq)
 }
 
 func TestDelSimple(t *testing.T) {
