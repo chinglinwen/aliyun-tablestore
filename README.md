@@ -60,11 +60,11 @@ GetRow:
 PutRows:
 
 	err := PutRows(us)
-	// uq[0].User  // usage example
 
 GetRows:
 
-	rows, err := GetRows(us)
+	err := GetRows(usq)
+	// usq[0].User  // usage example
 
 DelTable:
 
