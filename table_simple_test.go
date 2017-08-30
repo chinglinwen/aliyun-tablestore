@@ -6,8 +6,8 @@ import (
 )
 
 type User struct {
-	Id     int64  `tablestore:",pkey"`
-	User   string `tablestore:"usera"`
+	Id     int    // automatic pkey for id field, add ,noauto tag to disable it
+	User   string `tablestore:"usera"` // optional pkey
 	Pass   string
 	Ignore string `tablestore:"-"`
 	Age    int
