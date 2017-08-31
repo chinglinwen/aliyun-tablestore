@@ -61,6 +61,11 @@ GetRow:
 	err := GetRow(uq)
 	// uq.User  // usage example
 
+History:
+
+	d, err := GetRowHistory(uhq, 0)  // 0 means all versions.
+	// dd, ok := d.([]*User)
+
 PutRows:
 
 	err := PutRows(us)
