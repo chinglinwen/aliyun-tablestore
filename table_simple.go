@@ -170,14 +170,11 @@ func (s *SimpleTable) GetRow() (err error) {
 	if err != nil {
 		return
 	}
-	err = s.fillStruct(row)
-	if err != nil {
-		return
-	}
+	s.fillStruct(row)
 	return
 }
 
-func (s *SimpleTable) fillStruct(row Row) error {
+func (s *SimpleTable) fillStruct(row Row) {
 	t := reflect.ValueOf(s.model)
 	// if pointer get the underlying element
 	for t.Kind() == reflect.Ptr {
@@ -191,7 +188,7 @@ func (s *SimpleTable) fillStruct(row Row) error {
 		val := t.FieldByName(s.tagnames[v.Name])
 		val.Set(reflect.ValueOf(x))
 	}
-	return nil
+	return
 }
 
 // Get a single row. (table defined by struct s)
@@ -204,12 +201,32 @@ func GetRow(s interface{}) (err error) {
 }
 
 // Get row history.
-func (s *SimpleTable) GetRowHistory(max int) (RowHistory, error) {
+func (s *SimpleTable) GetRowHistoryRaw(max int) (RowHistory, error) {
 	return s.table.GetRowHistory(max)
 }
 
+func (s *SimpleTable) GetRowHistory(max int) (d interface{}, err error) {
+	rows, err := s.table.GetRowHistory(max)
+	if err != nil {
+		return
+	}
+
+	typ := reflect.TypeOf(s.model)
+	n := len(rows)
+	slice := reflect.MakeSlice(reflect.SliceOf(typ), n, n).Interface()
+	s.model = slice // s.model remains the same at user side
+
+	err = s.fillStructs(rows)
+	if err != nil {
+		return
+	}
+	d = slice
+	return
+}
+
 // Get row history. (table defined by struct s)
-func GetRowHistory(s interface{}, max int) (RowHistory, error) {
+// returned result need to cast back to user type, eg: dd, ok := d.([]*User).
+func GetRowHistory(s interface{}, max int) (interface{}, error) {
 	t, err := NewSimpleTable(s)
 	if err != nil {
 		return nil, err
@@ -271,16 +288,25 @@ func (s *SimpleTable) fillStructs(rows []Row) (err error) {
 	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
-	if t.Len() != len(rows) {
+	if t.Len() != len(rows) && len(rows) > 0 {
 		return ErrLengthNotMatch
 	}
+
 	for i := 0; i < t.Len(); i++ {
+		isnil := t.Index(i).IsNil()
+		if isnil {
+			typ := t.Index(i).Type()
+			x := reflect.New(typ.Elem())
+			t.Index(i).Set(x)
+		}
 		tt := reflect.ValueOf(t.Index(i).Interface()).Elem()
+
 		if !tt.CanSet() {
 			return ErrSliceCantSet
 		}
+
 		for _, v := range rows[i] {
-			if v.Pkey {
+			if v.Pkey && !isnil {
 				continue
 			}
 			x := v.Value
@@ -309,13 +335,36 @@ func (s *SimpleTable) PutRows() error {
 	return s.table.PutRows()
 }
 
-// Put multiple rows. (table defined by struct s)
+// Put multiple rows. (table defined by struct ss)
 func PutRows(ss interface{}) error {
 	t, err := NewSimpleTableBatch(ss)
 	if err != nil {
 		return err
 	}
 	return t.PutRows()
+}
+
+// Delete one or multiple rows. (table defined by struct s)
+func DelRow(s interface{}) error {
+	t, err := NewSimpleTable(s)
+	if err != nil {
+		return err
+	}
+	return t.DelRows()
+}
+
+// Delete one or multiple rows.
+func (s *SimpleTable) DelRows() error {
+	return s.table.DelRows()
+}
+
+// Delete one or multiple rows. (table defined by slice of struct ss)
+func DelRows(ss interface{}) error {
+	t, err := NewSimpleTableBatch(ss)
+	if err != nil {
+		return err
+	}
+	return t.DelRows()
 }
 
 func structName(s interface{}) (string, error) {

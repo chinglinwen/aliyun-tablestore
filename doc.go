@@ -31,6 +31,13 @@ Use struct as the model.
 			&User{Id: 2},
 			&User{Id: 3},
 		}
+		uhq = &User{Id: 4}
+		uhqd = []User{
+			User{Id: 1},
+			User{Id: 2},
+			User{Id: 3},
+			User{Id: 4},
+		}
 	)
 
 Create:
@@ -62,6 +69,14 @@ GetRows:
 
 	err := GetRows(usq)
 	// usq[0].User  // usage example
+
+DelRow:
+
+	err := DelRow(uhq)
+
+DelRows:
+
+	err := DelRows(uhqd)
 
 DelTable:
 

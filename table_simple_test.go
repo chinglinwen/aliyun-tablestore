@@ -30,6 +30,16 @@ var (
 		&User{Id: 2},
 		&User{Id: 3},
 	}
+	uh  = User{Id: 4, User: "user4", Pass: "pass4", Ignore: "ignore", Age: 4}
+	uh1 = User{Id: 4, User: "user4a", Pass: "pass4a", Ignore: "ignore", Age: 40}
+
+	uhq  = &User{Id: 4}
+	uhqd = []User{
+		User{Id: 1},
+		User{Id: 2},
+		User{Id: 3},
+		User{Id: 4},
+	}
 )
 
 func init() {
@@ -131,9 +141,54 @@ func TestSimpleGetRows(t *testing.T) {
 	}
 }
 
+func TestSimpleHistory(t *testing.T) {
+	_ = DelRow(uhq) // just try make clean from start.
+
+	err := UpdateRow(uh)
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+	err = UpdateRow(uh1)
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+
+	d, err := GetRowHistory(uhq, 0)
+	if err != nil {
+		t.Errorf("err: %v", err)
+		return
+	}
+	dd, ok := d.([]*User)
+	if !ok {
+		t.Errorf("cast back to user type err")
+		return
+	}
+	if len(dd) != 2 {
+		t.Errorf("length expect %v, got %v", 2, len(dd))
+		return
+	}
+	if dd[0].Age != 40 || dd[1].Age != 4 {
+		t.Errorf("for history 1, age expect %v, got %v", 40, dd[0].Age)
+		t.Errorf("for history 2, age expect %v, got %v", 4, dd[1].Age)
+		return
+	}
+}
+
+func TestSimpleDelRows(t *testing.T) {
+	err := DelRows(uhqd)
+	if err != nil {
+		t.Errorf("del rows err: %v", err)
+	}
+	err = GetRow(uq)
+	if err != nil && uq.Age == 1 {
+		t.Errorf("del rows check failed")
+		return
+	}
+}
+
 func TestDelSimple(t *testing.T) {
 	err := DelTable("userxx")
 	if err != nil {
-		fmt.Println("del table err: %v", err)
+		t.Errorf("del table err: %v", err)
 	}
 }

@@ -15,14 +15,14 @@ Use struct as the model.
 		Pass   string
 		Ignore string `tablestore:"-"`
 		Age    int
-	
+
 		extra string // unexported field will be ignored
 	}
-	
+
 	func (u User) TableName() string {
 		return "userxx"
 	}
-	
+
 	var (
 		u  = User{Id: 1, User: "user1", Pass: "pass1", Ignore: "ignore", Age: 1}
 		uq = &User{Id: 1}
@@ -33,6 +33,13 @@ Use struct as the model.
 		usq = []*User{
 			&User{Id: 2},
 			&User{Id: 3},
+		}
+		uhq = &User{Id: 4}
+		uhqd = []User{
+			User{Id: 1},
+			User{Id: 2},
+			User{Id: 3},
+			User{Id: 4},
 		}
 	)
 
@@ -66,9 +73,18 @@ GetRows:
 	err := GetRows(usq)
 	// usq[0].User  // usage example
 
+DelRow:
+
+	err := DelRow(uhq)
+
+DelRows:
+
+	err := DelRows(uhqd)
+	
 DelTable:
 
 	err := DelTable("user")
+
 
 Origin table usage example:
 
