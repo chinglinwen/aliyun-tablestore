@@ -11,7 +11,11 @@ func (t *Table) PutRowsRaw() ([]tablestore.RowResult, error) {
 	for _, row := range t.Rows {
 		req.AddRowChange(row.setputchange(t.Name))
 	}
-	resp, err := t.GetClient().BatchWriteRow(req)
+	c, err := t.GetClient()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.BatchWriteRow(req)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +29,7 @@ func (t *Table) PutRows() (err error) {
 
 // we must know primary key before query
 
-func (t *Table) GetRowsRaw() ([]tablestore.RowResult, error) {
+func (t *Table) GetRowsRaw() (result []tablestore.RowResult, err error) {
 	req := &tablestore.BatchGetRowRequest{}
 	criteria := &tablestore.MultiRowQueryCriteria{}
 
@@ -45,7 +49,11 @@ func (t *Table) GetRowsRaw() ([]tablestore.RowResult, error) {
 	//condition := tablestore.NewSingleColumnCondition("col1", tablestore.CT_GREATER_THAN, int64(0))
 	//criteria.Filter = condition
 
-	resp, err := t.GetClient().BatchGetRow(req)
+	c, err := t.GetClient()
+	if err != nil {
+		return
+	}
+	resp, err := c.BatchGetRow(req)
 	if err != nil {
 		return nil, err
 	}

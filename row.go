@@ -20,7 +20,12 @@ func (t *Table) PutRow() (err error) {
 	}
 	req := new(tablestore.PutRowRequest)
 	req.PutRowChange = t.Rows[0].setputchange(t.Name)
-	_, err = t.GetClient().PutRow(req)
+
+	c, err := t.GetClient()
+	if err != nil {
+		return
+	}
+	_, err = c.PutRow(req)
 	return
 }
 
@@ -31,7 +36,11 @@ func (t *Table) UpdateRow() (err error) {
 	}
 	req := new(tablestore.UpdateRowRequest)
 	req.UpdateRowChange = t.Rows[0].setupdatechange(t.Name)
-	_, err = t.GetClient().UpdateRow(req)
+	c, err := t.GetClient()
+	if err != nil {
+		return
+	}
+	_, err = c.UpdateRow(req)
 	return
 }
 
@@ -54,7 +63,11 @@ func (t *Table) GetRowRaw(options ...rowOption) (colmap *tablestore.ColumnMap, e
 	req := new(tablestore.GetRowRequest)
 	req.SingleRowQueryCriteria = criteria
 
-	resp, err := t.GetClient().GetRow(req)
+	c, err := t.GetClient()
+	if err != nil {
+		return
+	}
+	resp, err := c.GetRow(req)
 	if err != nil {
 		return
 	}

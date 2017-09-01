@@ -15,7 +15,12 @@ func (t *Table) DelColumn(name string) (err error) {
 	chg := t.Rows[0].setudelchange(t.Name)
 	chg.DeleteColumn(name)
 	req.UpdateRowChange = chg
-	_, err = t.GetClient().UpdateRow(req)
+
+	c, err := t.GetClient()
+	if err != nil {
+		return
+	}
+	_, err = c.UpdateRow(req)
 	return
 }
 
@@ -31,7 +36,12 @@ func (t *Table) PutColumn(m map[string]interface{}) (err error) {
 		chg.PutColumn(name, wraptype(v))
 	}
 	req.UpdateRowChange = chg
-	_, err = t.GetClient().UpdateRow(req)
+
+	c, err := t.GetClient()
+	if err != nil {
+		return
+	}
+	_, err = c.UpdateRow(req)
 	return
 }
 

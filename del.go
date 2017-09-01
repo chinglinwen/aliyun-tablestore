@@ -16,7 +16,11 @@ func (t *Table) DelRows(options ...delOption) (err error) {
 	for i, v := range t.Rows {
 		req := new(tablestore.DeleteRowRequest)
 		req.DeleteRowChange = v.setdelchange(t.Name, i, options...)
-		_, err = t.GetClient().DeleteRow(req)
+		c, errx := t.GetClient()
+		if errx != nil {
+			return errx
+		}
+		_, err = c.DeleteRow(req)
 	}
 	return
 }

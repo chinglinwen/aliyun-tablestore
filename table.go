@@ -33,6 +33,8 @@ type Column struct {
 
 type Row []Column
 
+var ErrClientNotSet = errors.New("client is not set,no init")
+
 // New Create a table. ( with default client),
 // It can be create by literal construction too.
 func New(name string, rows []Row, options ...tableOption) (t *Table) {
@@ -53,11 +55,14 @@ func (t *Table) SetClient(c *tablestore.TableStoreClient) {
 	t.client = c
 }
 
-func (t *Table) GetClient() *tablestore.TableStoreClient {
+func (t *Table) GetClient() (*tablestore.TableStoreClient, error) {
 	if t.client == nil {
-		return defaultClient
+		t.client = defaultClient
 	}
-	return t.client
+	if t.client == nil {
+		return nil, ErrClientNotSet
+	}
+	return t.client, nil
 }
 
 func (t *Table) MaxVersion(max int) {
@@ -88,7 +93,11 @@ func (t *Table) Create() (err error) {
 	req.TableOption = option
 	req.ReservedThroughput = res
 
-	_, err = t.GetClient().CreateTable(req)
+	c, err := t.GetClient()
+	if err != nil {
+		return
+	}
+	_, err = c.CreateTable(req)
 	if err != nil {
 		if strings.Contains(err.Error(), "exist") {
 			err = nil
@@ -141,7 +150,11 @@ func (t *Table) setmeta() (*tablestore.TableMeta, error) {
 func (t *Table) Del() (err error) {
 	req := new(tablestore.DeleteTableRequest)
 	req.TableName = t.Name
-	_, err = t.GetClient().DeleteTable(req)
+	c, err := t.GetClient()
+	if err != nil {
+		return
+	}
+	_, err = c.DeleteTable(req)
 	return
 }
 
