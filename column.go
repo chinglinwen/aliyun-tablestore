@@ -1,15 +1,13 @@
 package tablestore
 
 import (
-	"errors"
-
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 )
 
 // Provided primary key as condition, it's need exist and matched.
 func (t *Table) DelColumn(name string) (err error) {
 	if len(t.Rows) == 0 {
-		return errors.New("no any row")
+		return ErrNoAnyRow
 	}
 	req := new(tablestore.UpdateRowRequest)
 	chg := t.Rows[0].setudelchange(t.Name)
@@ -28,7 +26,7 @@ func (t *Table) DelColumn(name string) (err error) {
 // It's not change the table structure.
 func (t *Table) PutColumn(m map[string]interface{}) (err error) {
 	if len(t.Rows) == 0 {
-		return errors.New("no any row")
+		return ErrNoAnyRow
 	}
 	req := new(tablestore.UpdateRowRequest)
 	chg := t.Rows[0].setudelchange(t.Name)

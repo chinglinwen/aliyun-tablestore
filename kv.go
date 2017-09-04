@@ -1,9 +1,5 @@
 package tablestore
 
-import (
-	"errors"
-)
-
 type KV struct {
 	Name string
 	K, V interface{}
@@ -105,7 +101,7 @@ func (k *KV) Get() (t T, err error) {
 		t.Timestamp = v.Timestamp
 		return
 	}
-	err = errors.New("no any value")
+	err = ErrNoAnyValue
 	return
 }
 
@@ -121,7 +117,7 @@ func (k *KV) KVHistory(max int) (vs []T, err error) {
 	}
 	for _, v := range rows {
 		if len(v) != 1 {
-			err = errors.New("no history or too many columns")
+			err = ErrNoHistory
 			return
 		}
 		vs = append(vs, T{Value: v[0].Value, Timestamp: v[0].Timestamp})

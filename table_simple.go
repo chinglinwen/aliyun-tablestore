@@ -12,8 +12,12 @@ import (
 var TagName = "tablestore"
 
 var (
-	ErrSliceCantSet   = errors.New("slice can't set, try use pointer for slice element")
-	ErrLengthNotMatch = errors.New("length does not match")
+	ErrSliceCantSet          = errors.New("slice can't set, try use pointer for slice element")
+	ErrLengthNotMatch        = errors.New("length does not match")
+	ErrNotASliceType         = errors.New("not a slice type")
+	ErrSliceIsNil            = errors.New("slice is nil, or zero length")
+	ErrNoPrimaryKeySpecified = errors.New("no primary key specified")
+	ErrNotAStruct            = errors.New("not a struct")
 )
 
 // SimpleTable a simplify table concept based on struct.
@@ -121,7 +125,7 @@ func NewSimpleTableBatchRaw(ss []interface{}, options ...tableOption) (t *Simple
 func interfaceSlice(slice interface{}) (ret []interface{}, err error) {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
-		err = errors.New("not a slice type")
+		err = ErrNotASliceType
 		return
 	}
 	ret = make([]interface{}, s.Len())
@@ -129,7 +133,7 @@ func interfaceSlice(slice interface{}) (ret []interface{}, err error) {
 		ret[i] = s.Index(i).Interface()
 	}
 	if ret == nil || len(ret) == 0 {
-		err = errors.New("slice is nil, or zero length")
+		err = ErrSliceIsNil
 		return
 	}
 	return
@@ -421,7 +425,7 @@ func structToRow(s interface{}) (row Row, tagnames map[string]string, err error)
 		tagnames[name] = typeField.Name
 	}
 	if !pkeyexist {
-		err = errors.New("no primary key specified")
+		err = ErrNoPrimaryKeySpecified
 		return
 	}
 	return
@@ -434,7 +438,7 @@ func strctVal(s interface{}) (v reflect.Value, err error) {
 		v = v.Elem()
 	}
 	if v.Kind() != reflect.Struct {
-		err = errors.New("not a struct")
+		err = ErrNotAStruct
 		return
 	}
 	return

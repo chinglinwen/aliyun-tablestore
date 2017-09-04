@@ -40,7 +40,23 @@ type Row []Column
 var (
 	ErrClientNotSet    = errors.New("client is not set,no init")
 	ErrSomeSetKeyEmpty = errors.New("some of setkey value is empty")
+
+	ErrMinMaxNotMatch = errors.New("number of min and max does not match")
+	ErrNoPrimaryKey   = errors.New("no column for the primary key")
+	ErrNoAnyRow       = errors.New("no any row")
+	ErrNoAnyValue     = errors.New("no any value")
+	ErrNoHistory      = errors.New("no history or too many columns")
+
+	ErrNoPrimaryKeyDefined = errors.New("no any row, so no primary key been defined")
 )
+
+type TypeNotSupportError struct {
+	Name string
+}
+
+func (t *TypeNotSupportError) Error() string {
+	return "type not supported for column: " + t.Name
+}
 
 // New Create a table. ( with default client),
 // It can be create by literal construction too.
@@ -156,7 +172,7 @@ func (t *Table) setmeta() (*tablestore.TableMeta, error) {
 	meta.TableName = t.Name
 
 	if len(t.Rows) == 0 {
-		return nil, errors.New("no any row, so no primary key been defined")
+		return nil, ErrNoPrimaryKeyDefined
 	}
 
 	// keep columns primary key in order by slice
@@ -172,7 +188,7 @@ func (t *Table) setmeta() (*tablestore.TableMeta, error) {
 		case []byte:
 			meta.AddPrimaryKeyColumn(v.Name, tablestore.PrimaryKeyType_BINARY)
 		default:
-			return nil, errors.New("type not supported for column: " + v.Name)
+			return nil, &TypeNotSupportError{Name: v.Name}
 		}
 	}
 	return meta, nil

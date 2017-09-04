@@ -1,8 +1,6 @@
 package tablestore
 
 import (
-	"errors"
-
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 )
 
@@ -112,11 +110,11 @@ func GetRange(rc RangeCond) ([]Row, error) {
 // min -> max
 func GetRangeRaw(rc RangeCond) (*tablestore.GetRangeResponse, error) {
 	if len(rc.Min) != len(rc.Max) {
-		return nil, errors.New("number of min and max does not match")
+		return nil, ErrMinMaxNotMatch
 	}
 	n := len(rc.Min)
 	if n == 0 {
-		return nil, errors.New("no column for the primary key")
+		return nil, ErrNoPrimaryKey
 	}
 
 	req := &tablestore.GetRangeRequest{}

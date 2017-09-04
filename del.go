@@ -1,12 +1,8 @@
 package tablestore
 
 import (
-	"errors"
-
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 )
-
-var ErrNoAnyRow = errors.New("no any row")
 
 // DelRows delete provided rows ( one or many ).
 func (t *Table) DelRows(options ...delOption) (err error) {
