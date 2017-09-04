@@ -164,6 +164,15 @@ GetRows:
 		fmt.Println()
 	}
 
+Tablescan:
+
+	c := RangeCond{
+		Name: "test",
+		Min:  []string{"id", "name"},
+		Max:  []string{"id", "name"},
+	}
+	rows, err := GetRange(c)
+
 
 Put/Del columns:
 
@@ -225,15 +234,6 @@ KVHistory:
 	for _, v := range vs {
 		fmt.Println("vs:", v.String())
 	}
-
-Tablescan:
-
-	c := RangeCond{
-		Name: "test",
-		Min:  []string{"id", "name"},
-		Max:  []string{"id", "name"},
-	}
-	rows, err := GetRange(c)
 
 Del:
 
