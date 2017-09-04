@@ -3,6 +3,7 @@ package tablestore
 import (
 	"errors"
 	"reflect"
+	"time"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 )
@@ -19,7 +20,7 @@ func (t *Table) PutRow() (err error) {
 		return ErrNoRowOrTooMany
 	}
 	req := new(tablestore.PutRowRequest)
-	req.PutRowChange = t.Rows[0].setputchange(t.Name)
+	req.PutRowChange = t.Rows[0].setputchange(t.Name, t.timestamp)
 
 	c, err := t.GetClient()
 	if err != nil {
@@ -46,7 +47,7 @@ func (t *Table) UpdateRow() (err error) {
 
 // Default to first row as condition.
 // Primary key length must be matched.
-func (t *Table) GetRowRaw(options ...rowOption) (colmap *tablestore.ColumnMap, err error) {
+func (t *Table) GetRowRaw(options ...rowQueryOption) (colmap *tablestore.ColumnMap, err error) {
 	if len(t.Rows) == 0 {
 		return nil, ErrNoAnyRow
 	}
@@ -75,9 +76,9 @@ func (t *Table) GetRowRaw(options ...rowOption) (colmap *tablestore.ColumnMap, e
 	return
 }
 
-type rowOption func(*tablestore.SingleRowQueryCriteria)
+type rowQueryOption func(*tablestore.SingleRowQueryCriteria)
 
-func SetRowMaxVersion(max int) rowOption {
+func SetRowMaxVersion(max int) rowQueryOption {
 	if max == 0 {
 		max = 10000 // big enough for all version.
 	}
@@ -137,7 +138,7 @@ func (t *Table) GetRow() (Row, error) {
 	columns := []Column{}
 	for name, col := range colmap.Columns {
 		v := col[len(col)-1] // take newest value
-		columns = append(columns, Column{Name: name, Value: v.Value})
+		columns = append(columns, Column{Name: name, Value: v.Value, Timestamp: v.Timestamp})
 	}
 	return Row(columns), nil
 }
@@ -166,7 +167,10 @@ func wraptype(v interface{}) interface{} {
 	}
 }
 
-func (r Row) setputchange(tableName string) *tablestore.PutRowChange {
+func (r Row) setputchange(tableName string, timestamp int64) *tablestore.PutRowChange {
+	if timestamp == 0 {
+		timestamp = time.Now().UnixNano() / 1000000 // in a day range
+	}
 	chg := new(tablestore.PutRowChange)
 	chg.TableName = tableName
 	chg.PrimaryKey = r.setpk()
@@ -174,7 +178,7 @@ func (r Row) setputchange(tableName string) *tablestore.PutRowChange {
 		if v.Pkey {
 			continue
 		}
-		chg.AddColumn(v.Name, wraptype(v.Value))
+		chg.AddColumnWithTimestamp(v.Name, wraptype(v.Value), timestamp)
 	}
 	chg.SetCondition(tablestore.RowExistenceExpectation_IGNORE)
 	return chg
@@ -199,12 +203,9 @@ func (r Row) setupdatechange(tableName string) *tablestore.UpdateRowChange {
 // So we use column as base type to convert.
 
 // Convert column's value to int.
+// It's cast from int64, use with careful.
 func (c *Column) Int() (v int) {
-	if c.Value == nil {
-		return
-	}
-	v, _ = c.Value.(int)
-	return
+	return int(c.Int64())
 }
 
 // Convert column's value to int64.

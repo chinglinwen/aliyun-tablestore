@@ -3,6 +3,7 @@ package tablestore
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 var kvname = "kv"
@@ -49,6 +50,22 @@ func TestGet(t *testing.T) {
 		t.Errorf("err: %v", err)
 	}
 	fmt.Println("v:", v)
+}
+
+func TestSetKVTimestamp(t *testing.T) {
+	ts := Timestamp(time.Now().Add(1 * time.Hour))
+	err := UpdateWithTimeStamp(kvname, "ts", "when", ts)
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+	v, err := Get(kvname, "ts")
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+	if v.Timestamp != ts {
+		t.Errorf("ts incorrect")
+	}
+	fmt.Println("v: ", v.Value)
 }
 
 func TestKVHistory(t *testing.T) {

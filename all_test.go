@@ -123,19 +123,12 @@ func TestGetRow(t *testing.T) {
 
 func printRow(row Row) {
 	for _, v := range row {
-		if v.Name == "id" {
-			fmt.Printf("%v,%#v\n", v.Name, v.Int())
-			continue
-		}
-		if v.Name == "name" {
-			fmt.Printf("%v,%#v\n", v.Name, v.String())
-			continue
-		}
+		var val interface{}
+		val = v.Value
 		if v.Name == "phone" {
-			fmt.Printf("%v,%#v\n", v.Name, string(v.Bytes()))
-			continue
+			val = string(v.Bytes())
 		}
-		fmt.Printf("%v,%#v,type: %t\n", v.Name, v.Value, v.Value)
+		fmt.Printf("%v,%v, ts: %v\n", v.Name, val, v.Timestamp)
 	}
 }
 
@@ -205,4 +198,30 @@ func TestDelRows(t *testing.T) {
 	if err != ErrNoAnyRow {
 		t.Errorf("empty del err: %v", err)
 	}
+}
+
+func TestGetRange(t *testing.T) {
+	c := RangeCond{
+		Name: "test",
+		Min:  []string{"id", "name"},
+		Max:  []string{"id", "name"},
+	}
+	rows, err := GetRange(c)
+	if err != nil {
+		t.Errorf("err: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Errorf("rows length expect 2, got: %v", len(rows))
+	}
+	var age int
+	for _, v := range rows[1] {
+		if v.Name == "age" {
+			age = v.Int()
+			break
+		}
+	}
+	if age != 10 {
+		t.Errorf("rows[1].Age expect 10, got: %v", age)
+	}
+	//printRows(rows)
 }

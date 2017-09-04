@@ -3,6 +3,7 @@ package tablestore
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 )
@@ -20,20 +21,26 @@ type Table struct {
 	//timeToAlive int  // not implement as option yet
 	//readcap int  // not implement as option yet
 	//writeCap int // not implement as option yet
+
+	timestamp int64
 }
 
 // Value: Primary key:   int,int64,string,[]byte.
 // Value: Normal column: int,int64,string,[]byte,bool,float64.
 type Column struct {
-	Name     string
-	Pkey     bool // Primary key or not
-	AutoIncr bool // if auto increment
-	Value    interface{}
+	Name      string
+	Pkey      bool // Primary key or not
+	AutoIncr  bool // if auto increment
+	Value     interface{}
+	Timestamp int64 // default is put time
 }
 
 type Row []Column
 
-var ErrClientNotSet = errors.New("client is not set,no init")
+var (
+	ErrClientNotSet    = errors.New("client is not set,no init")
+	ErrSomeSetKeyEmpty = errors.New("some of setkey value is empty")
+)
 
 // New Create a table. ( with default client),
 // It can be create by literal construction too.
@@ -69,8 +76,13 @@ func (t *Table) MaxVersion(max int) {
 	t.maxVersion = max
 }
 
-func SetKey(endPoint, instanceName, accessKeyId, accessKeySecret string, options ...tablestore.ClientOption) {
+func SetKey(endPoint, instanceName, accessKeyId, accessKeySecret string, options ...tablestore.ClientOption) error {
+	if endPoint == "" || instanceName == "" ||
+		accessKeyId == "" || accessKeySecret == "" {
+		return ErrSomeSetKeyEmpty
+	}
 	defaultClient = tablestore.NewClient(endPoint, instanceName, accessKeyId, accessKeySecret, options...)
+	return nil
 }
 
 // Create create table one row with zero value is enough.
@@ -118,6 +130,25 @@ func SetClient(client *tablestore.TableStoreClient) tableOption {
 	return func(t *Table) {
 		t.client = client
 	}
+}
+
+// Default will be insert time
+// SetTimestamp to set different timestamp.
+// Must be in a day range. (day1+ts)<ts<(day3+ts)
+//
+// Example min timestamp and max timestamp range:
+//	 MinTimestamp:1504417246415914, MaxTimestamp:1504590046415914
+//	 Sunday, September 3, 2017 1:40:46.416 PM GMT+08:00
+//	 Tuesday, September 5, 2017 1:40:46.416 PM GMT+08:00
+//
+func SetTimestamp(ts int64) tableOption {
+	return func(t *Table) {
+		t.timestamp = ts
+	}
+}
+
+func Timestamp(t time.Time) int64 {
+	return t.UnixNano() / 1000000
 }
 
 func (t *Table) setmeta() (*tablestore.TableMeta, error) {

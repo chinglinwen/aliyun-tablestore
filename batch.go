@@ -9,7 +9,7 @@ import (
 func (t *Table) PutRowsRaw() ([]tablestore.RowResult, error) {
 	req := &tablestore.BatchWriteRowRequest{}
 	for _, row := range t.Rows {
-		req.AddRowChange(row.setputchange(t.Name))
+		req.AddRowChange(row.setputchange(t.Name, t.timestamp))
 	}
 	c, err := t.GetClient()
 	if err != nil {
@@ -80,8 +80,9 @@ func rowResultParse(resp []tablestore.RowResult) (rows []Row, err error) {
 		}
 		for _, colresult := range rowresult.Columns {
 			columns = append(columns, Column{
-				Name:  colresult.ColumnName,
-				Value: colresult.Value,
+				Name:      colresult.ColumnName,
+				Value:     colresult.Value,
+				Timestamp: colresult.Timestamp,
 			})
 		}
 		rows = append(rows, columns)
@@ -89,7 +90,7 @@ func rowResultParse(resp []tablestore.RowResult) (rows []Row, err error) {
 	return
 }
 
-// Table scan, may need to change in the future.
+// Table scan condition.
 type RangeCond struct {
 	Name   string // table name
 	Limit  int
@@ -98,9 +99,18 @@ type RangeCond struct {
 	Client *tablestore.TableStoreClient //empty will use default client
 }
 
+// Table scan.
+func GetRange(rc RangeCond) ([]Row, error) {
+	resp, err := GetRangeRaw(rc)
+	if err != nil {
+		return nil, err
+	}
+	return rangeResultParse(resp)
+}
+
 // to have two primary key for the range
 // min -> max
-func GetRange(rc RangeCond) (*tablestore.GetRangeResponse, error) {
+func GetRangeRaw(rc RangeCond) (*tablestore.GetRangeResponse, error) {
 	if len(rc.Min) != len(rc.Max) {
 		return nil, errors.New("number of min and max does not match")
 	}
@@ -117,7 +127,7 @@ func GetRange(rc RangeCond) (*tablestore.GetRangeResponse, error) {
 	endPK := new(tablestore.PrimaryKey)
 	for i := 0; i < n; i++ {
 		startPK.AddPrimaryKeyColumnWithMinValue(rc.Min[i])
-		startPK.AddPrimaryKeyColumnWithMaxValue(rc.Max[i])
+		endPK.AddPrimaryKeyColumnWithMaxValue(rc.Max[i])
 	}
 
 	criteria.StartPrimaryKey = startPK
@@ -133,4 +143,26 @@ func GetRange(rc RangeCond) (*tablestore.GetRangeResponse, error) {
 		rc.Client = defaultClient
 	}
 	return rc.Client.GetRange(req)
+}
+
+func rangeResultParse(resp *tablestore.GetRangeResponse) (rows []Row, err error) {
+	for _, rowresult := range resp.Rows {
+		columns := []Column{}
+		for _, pkeyresult := range rowresult.PrimaryKey.PrimaryKeys {
+			columns = append(columns, Column{
+				Name:  pkeyresult.ColumnName,
+				Value: pkeyresult.Value,
+				Pkey:  true,
+			})
+		}
+		for _, colresult := range rowresult.Columns {
+			columns = append(columns, Column{
+				Name:      colresult.ColumnName,
+				Value:     colresult.Value,
+				Timestamp: colresult.Timestamp,
+			})
+		}
+		rows = append(rows, columns)
+	}
+	return
 }

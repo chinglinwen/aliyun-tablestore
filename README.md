@@ -226,6 +226,15 @@ KVHistory:
 		fmt.Println("vs:", v.String())
 	}
 
+Tablescan:
+
+	c := RangeCond{
+		Name: "test",
+		Min:  []string{"id", "name"},
+		Max:  []string{"id", "name"},
+	}
+	rows, err := GetRange(c)
+
 Del:
 
 	err := Del("kv", "hello", "there2")

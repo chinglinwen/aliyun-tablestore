@@ -12,6 +12,7 @@ type KV struct {
 	kname      string
 	vname      string
 	maxVersion int
+	timestamp  int64
 }
 
 func NewKV(tableName string, key, value interface{}, options ...kvOption) (k *KV) {
@@ -35,7 +36,7 @@ func NewKV(tableName string, key, value interface{}, options ...kvOption) (k *KV
 		k.table = New(k.Name, row, MaxVersion(k.maxVersion))
 		return
 	}
-	k.table = New(k.Name, row)
+	k.table = New(k.Name, row, SetTimestamp(k.timestamp))
 	return
 }
 
@@ -51,6 +52,12 @@ func SetKVName(kname, vname string) kvOption {
 func SetMaxVersion(max int) kvOption {
 	return func(k *KV) {
 		k.maxVersion = max
+	}
+}
+
+func SetKVTimestamp(ts int64) kvOption {
+	return func(k *KV) {
+		k.timestamp = ts
 	}
 }
 
@@ -72,6 +79,10 @@ func Put(name string, k, v interface{}) error {
 	return NewKV(name, k, v).Put()
 }
 
+func PutWithTimeStamp(name string, k, v interface{}, ts int64) error {
+	return NewKV(name, k, v, SetKVTimestamp(ts)).Put()
+}
+
 func (k *KV) Update() error {
 	return k.table.UpdateRow()
 }
@@ -80,13 +91,18 @@ func Update(name string, k, v interface{}) error {
 	return NewKV(name, k, v).Update()
 }
 
+func UpdateWithTimeStamp(name string, k, v interface{}, ts int64) error {
+	return NewKV(name, k, v, SetKVTimestamp(ts)).Put()
+}
+
 func (k *KV) Get() (t T, err error) {
 	row, err := k.table.GetRow()
 	if err != nil {
 		return
 	}
 	for _, v := range row {
-		t.value = v.Value
+		t.Value = v.Value
+		t.Timestamp = v.Timestamp
 		return
 	}
 	err = errors.New("no any value")
@@ -108,7 +124,7 @@ func (k *KV) KVHistory(max int) (vs []T, err error) {
 			err = errors.New("no history or too many columns")
 			return
 		}
-		vs = append(vs, T{value: v[0].Value})
+		vs = append(vs, T{Value: v[0].Value, Timestamp: v[0].Timestamp})
 	}
 	return
 }
@@ -127,33 +143,30 @@ func Del(name string, k, v interface{}) error {
 }
 
 type T struct {
-	value interface{}
+	Value     interface{}
+	Timestamp int64
 }
 
 // Convert value to int.
 func (t *T) Int() (v int) {
-	v, _ = t.value.(int)
+	v, _ = t.Value.(int)
 	return
 }
 
 // Convert value to int64.
 func (t *T) Int64() (v int64) {
-	v, _ = t.value.(int64)
+	v, _ = t.Value.(int64)
 	return
 }
 
 // Convert value to string.
 func (t *T) String() (v string) {
-	v, _ = t.value.(string)
+	v, _ = t.Value.(string)
 	return
 }
 
 // Convert value to []byte.
 func (t *T) Bytes() (v []byte) {
-	v, _ = t.value.([]byte)
+	v, _ = t.Value.([]byte)
 	return
-}
-
-func (t *T) Any() interface{} {
-	return t.value
 }
