@@ -225,3 +225,10 @@ func TestGetRange(t *testing.T) {
 	}
 	//printRows(rows)
 }
+
+func TestDelTable(t *testing.T) {
+	err := DelTable("addressbook")
+	if err != nil {
+		t.Errorf("del table err: %v", err)
+	}
+}

@@ -65,7 +65,7 @@ func TestSetKVTimestamp(t *testing.T) {
 	if v.Timestamp != ts {
 		t.Errorf("ts incorrect")
 	}
-	fmt.Println("v: ", v.Value)
+	fmt.Printf("v: %v,time: %v\n", v.Value, Timestamp2Time(ts))
 }
 
 func TestKVHistory(t *testing.T) {

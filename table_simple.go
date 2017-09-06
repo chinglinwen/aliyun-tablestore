@@ -174,11 +174,17 @@ func (s *SimpleTable) GetRow() (err error) {
 	if err != nil {
 		return
 	}
-	s.fillStruct(row)
-	return
+	return s.fillStruct(row)
 }
 
-func (s *SimpleTable) fillStruct(row Row) {
+func (s *SimpleTable) fillStruct(row Row) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v, some type may not supported, eg. time.Time", r)
+			return
+		}
+	}()
+
 	t := reflect.ValueOf(s.model)
 	// if pointer get the underlying element
 	for t.Kind() == reflect.Ptr {
@@ -186,10 +192,11 @@ func (s *SimpleTable) fillStruct(row Row) {
 	}
 	for _, v := range row {
 		x := v.Value
-		if i, ok := x.(int64); ok {
+		val := t.FieldByName(s.tagnames[v.Name])
+		i, ok := x.(int64)
+		if ok && val.Kind() == reflect.Int {
 			x = int(i)
 		}
-		val := t.FieldByName(s.tagnames[v.Name])
 		val.Set(reflect.ValueOf(x))
 	}
 	return
@@ -314,10 +321,11 @@ func (s *SimpleTable) fillStructs(rows []Row) (err error) {
 				continue
 			}
 			x := v.Value
-			if i, ok := x.(int64); ok {
+			val := tt.FieldByName(s.tagnames[v.Name])
+			i, ok := x.(int64)
+			if ok && val.Kind() == reflect.Int {
 				x = int(i)
 			}
-			val := tt.FieldByName(s.tagnames[v.Name])
 			val.Set(reflect.ValueOf(x))
 		}
 	}

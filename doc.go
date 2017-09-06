@@ -65,6 +65,8 @@ History:
 
 	d, err := GetRowHistory(uhq, 0)  // 0 means all versions.
 	// dd, ok := d.([]*User)
+	// dd's primary key field will be zero value,
+	// it's the same for all history items.
 
 PutRows:
 

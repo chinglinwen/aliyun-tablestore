@@ -169,7 +169,7 @@ func wraptype(v interface{}) interface{} {
 
 func (r Row) setputchange(tableName string, timestamp int64) *tablestore.PutRowChange {
 	if timestamp == 0 {
-		timestamp = time.Now().UnixNano() / 1000000 // in a day range
+		timestamp = time.Now().UnixNano() / int64(time.Millisecond) // in a day range
 	}
 	chg := new(tablestore.PutRowChange)
 	chg.TableName = tableName

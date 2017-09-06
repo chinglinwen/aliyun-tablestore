@@ -164,7 +164,11 @@ func SetTimestamp(ts int64) tableOption {
 }
 
 func Timestamp(t time.Time) int64 {
-	return t.UnixNano() / 1000000
+	return t.UnixNano() / int64(time.Millisecond)
+}
+
+func Timestamp2Time(ts int64) time.Time {
+	return time.Unix(0, ts*int64(time.Millisecond))
 }
 
 func (t *Table) setmeta() (*tablestore.TableMeta, error) {
