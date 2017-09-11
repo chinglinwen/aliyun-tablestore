@@ -49,7 +49,7 @@ func TestGet(t *testing.T) {
 	if err != nil {
 		t.Errorf("err: %v", err)
 	}
-	fmt.Println("v:", v)
+	fmt.Printf("v: %v, time: %v\n", v, v.Time())
 }
 
 func TestSetKVTimestamp(t *testing.T) {

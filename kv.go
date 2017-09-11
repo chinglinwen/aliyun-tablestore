@@ -1,5 +1,7 @@
 package tablestore
 
+import "time"
+
 type KV struct {
 	Name string
 	K, V interface{}
@@ -165,4 +167,9 @@ func (t *T) String() (v string) {
 func (t *T) Bytes() (v []byte) {
 	v, _ = t.Value.([]byte)
 	return
+}
+
+// Get value's timestamp.
+func (t *T) Time() time.Time {
+	return Timestamp2Time(t.Timestamp)
 }
