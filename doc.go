@@ -1,5 +1,5 @@
 /*
-Package tablestore implement a abstract table concept for aliyun tablestore.
+Package tablestore implement an abstract table concept for aliyun tablestore.
 
 SimpleTable:
 
@@ -205,9 +205,9 @@ Key/Value:
 Use update to keep the history, Put will delete history.
 
 First time need to create kv (table first), in case table not exist yet.
-Often at init from during the process
+Often at init from during the process.
 
-for KV init(create), zero value is enough.
+For KV init(create), zero value is enough.
 
 Create:
 
